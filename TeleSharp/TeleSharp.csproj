@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0ABC1A22-37A0-4478-A03F-2D796CAD9DB4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TeleSharp</RootNamespace>
+    <AssemblyName>TeleSharp</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="RestSharp, Version=105.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\RestSharp.105.2.3\lib\net452\RestSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Entities\Animation.cs" />
+    <Compile Include="Entities\Audio.cs" />
+    <Compile Include="Entities\CallbackQuery.cs" />
+    <Compile Include="Entities\Chat.cs" />
+    <Compile Include="Entities\FileDownloadResult.cs" />
+    <Compile Include="Entities\Game.cs" />
+    <Compile Include="Entities\Inline\AnswerInlineQuery.cs" />
+    <Compile Include="Entities\Inline\ChosenInlineResult.cs" />
+    <Compile Include="Entities\Inline\InlineQuery.cs" />
+    <Compile Include="Entities\Inline\InlineQueryResult.cs" />
+    <Compile Include="Entities\Inline\InlineQueryResultArticle.cs" />
+    <Compile Include="Entities\Inline\InlineQueryResultGif.cs" />
+    <Compile Include="Entities\Inline\InlineQueryResultMpeg4Gif.cs" />
+    <Compile Include="Entities\Inline\InlineQueryResultPhoto.cs" />
+    <Compile Include="Entities\Inline\InlineQueryResultVideo.cs" />
+    <Compile Include="Entities\MessageEntity.cs" />
+    <Compile Include="Entities\SendEntities\InlineKeyboardButton.cs" />
+    <Compile Include="Entities\SendEntities\InlineKeyboardMarkup.cs" />
+    <Compile Include="Entities\SendEntities\KeyboardButton.cs" />
+    <Compile Include="Entities\SendEntities\ReplyKeyboardMarkup.cs" />
+    <Compile Include="Entities\SendEntities\ReplyKeyboardRemove.cs" />
+    <Compile Include="Entities\SendEntities\SendMessageParams.cs" />
+    <Compile Include="Entities\Venue.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SnakeCaseSerializationStrategy.cs" />
+    <Compile Include="TeleSharp.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Entities\Voice.cs" />
+    <Compile Include="Entities\ChatAction.cs" />
+    <Compile Include="Entities\Contact.cs" />
+    <Compile Include="Entities\Document.cs" />
+    <Compile Include="Entities\File.cs" />
+    <Compile Include="Entities\GroupChat.cs" />
+    <Compile Include="Entities\Location.cs" />
+    <Compile Include="Entities\Message.cs" />
+    <Compile Include="Entities\MessageSender.cs" />
+    <Compile Include="Entities\PhotoSize.cs" />
+    <Compile Include="Entities\PhotoSizeArray.cs" />
+    <Compile Include="Entities\Sticker.cs" />
+    <Compile Include="Entities\Update.cs" />
+    <Compile Include="Entities\User.cs" />
+    <Compile Include="Entities\Video.cs" />
+    <Compile Include="Utils.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
