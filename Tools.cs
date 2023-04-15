@@ -18,10 +18,8 @@ namespace GrzTools
             logtxt = now.ToString("dd.MM.yyyy HH:mm:ss_fff ", CultureInfo.InvariantCulture) + logtxt;
             logText(logtxt + "\r\n");
         }
-        public static void logText(string logtxt, bool logToFile = true) {
-            if ( logToFile ) {
-                logTextToFile(logtxt);
-            }
+        public static void logText(string logtxt) {
+            logTextToFile(logtxt);
         }
         // private
         private static bool _busy = false;
