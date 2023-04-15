@@ -31,8 +31,8 @@ namespace MotionUVC
                 
         public class oneROI {                                                // class to define a single 'Region Of Interest' = ROI
             public Rectangle rect { get; set; }                              // monitor area  
-            public int thresholdIntensity { get; set; }                      // pixel gray value threshold of a change
-            public double thresholdChanges { get; set; }                     // percentage of pixels with a change
+            public int thresholdIntensity { get; set; }                      // pixel gray value threshold considered as a potential motion
+            public double thresholdChanges { get; set; }                     // percentage of pixels in a ROI considered as a potential motion
             public bool reference { get; set; }                              // reference ROI to exclude false positive motions
             public int boxScaler { get; set; }                               // consecutive pixels in a box   
         };
@@ -62,7 +62,7 @@ namespace MotionUVC
                 this.consecutive = false;
             }
         }
-        List<Motion> _motionsList = new List<Motion>();                      // list of Motion, which are a motion sequence
+        List<Motion> _motionsList = new List<Motion>();                      // list of Motion, which are motion sequences if 'consecutive' is true
         int _motionsDetected = 0;                                            // motion detection counter
         bool _justConnected = false;                                         // just connected 
         double _fps = 0;                                                     // current frame rate 
@@ -198,7 +198,7 @@ namespace MotionUVC
             Task.Run(() => { loadTodaysMotionList(); });
         }
 
-        // fill _motionList with today's data from disk
+        // fill _motionList with today's motion image data from disk
         private void loadTodaysMotionList() {
             DateTime now = DateTime.Now;
             string nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -304,7 +304,7 @@ namespace MotionUVC
                 //    this.connectButton.PerformClick();
                 //}
             }
-            // check whether settings were forcing a 'make video'
+            // check whether settings were forcing a 'make video now'
             if ( Settings.MakeVideoNow ) {
                 Task.Run(() => { makeMotionVideo(Settings.CameraResolution); });
             }
@@ -321,7 +321,7 @@ namespace MotionUVC
         // a general timer 1x / 30s for app flow control
         private void timerFlowControl_Tick(object sender, EventArgs e) {
 
-            // check once per 30s
+            // check once per 30s, whether to search & send an alarm video sequence
             if ( _alarmSequence && !_alarmSequenceBusy ) {
                 // busy flag to prevent overrun
                 _alarmSequenceBusy = true;
@@ -388,11 +388,11 @@ namespace MotionUVC
                     _alarmSequenceBusy = false;
                     return;
                 }
-                // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy
+                // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy when done
                 Task.Run(() => { makeMotionSequence(subList, Settings.CameraResolution); });
             }
 
-            // one check every hour
+            // log once per hour the current app status
             if ( DateTime.Now.Minute % 60 == 0  && DateTime.Now.Second < 31) {
                 // get number of consecutive motions
                 int consecutiveCount = 0;
@@ -411,7 +411,7 @@ namespace MotionUVC
             // one check every 15 minutes
             if ( DateTime.Now.Minute % 15 == 0 && DateTime.Now.Second < 31 ) {
 
-                // try to restart Telegram, if it should run but it doesn't
+                // try to restart Telegram, if it should run but it doesn't due to an internal fail
                 if ( Settings.UseTelegramBot && _Bot == null ) {
                     Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: Telegram restart");
                     _telegramOnErrorCount = 0;
@@ -502,6 +502,7 @@ namespace MotionUVC
                     // INI: write to ini
                     updateSettingsFromAppProperties();
                     Settings.writePropertyGridToIni();
+                    // a planned reboot is not a crash
                     AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
                     ini.IniWriteValue("MotionUVC", "AppCrash", "False");
                     // reboot
@@ -510,7 +511,7 @@ namespace MotionUVC
             }
         }
 
-        // make video sequence from images stored in mol aka List<Motion> 
+        // make video sequence from motion/image data stored in mol aka List<Motion> 
         public void makeMotionSequence(List<Motion> mol, Size size) {
             // folder and video file name
             DateTime now = DateTime.Now;
@@ -808,7 +809,7 @@ namespace MotionUVC
             } while ( runPing );
         }
 
-        // Telegram connector provides live a tick info, this timer tick shall act, if Telegram fails
+        // Telegram connector provides a live tick info, this timer tick shall act, if Telegram live tick info fails multiple time
         private void timerCheckTelegramLiveTick_Tick(object sender, EventArgs e) {
             if ( _Bot != null ) {
                 TimeSpan span = DateTime.Now - _connectionLiveTick;
@@ -860,7 +861,7 @@ namespace MotionUVC
                 Logger.logTextLn(DateTime.Now, "OnError: _Bot == null, but OnError still active");
             }
         }
-        // Read received messages of bot in infinity loop
+        // read received Telegram messages to the local bot
         private void OnMessage(TeleSharp.Entities.Message message) {
             // Get mesage sender information
             MessageSender sender = (MessageSender)message.Chat ?? message.From;
@@ -986,7 +987,7 @@ namespace MotionUVC
             }
         }
 
-        // get UVC devices into combo
+        // get UVC devices into a combo box
         void getCameraBasics() {
             this.devicesCombo.Items.Clear();
 
@@ -1063,7 +1064,7 @@ namespace MotionUVC
             // INI: write to ini
             updateSettingsFromAppProperties();
             Settings.writePropertyGridToIni();
-            // if app flow comes here, there was no app crash, write such info to ini for next startup log
+            // if app live cycle comes here, there was no app crash, write such info to ini for next startup log
             AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
             ini.IniWriteValue("MotionUVC", "AppCrash", "False");
         }
@@ -1084,7 +1085,7 @@ namespace MotionUVC
             }
         }
 
-        // collect supported video sizes
+        // collect supported video frame sizes in a combo box
         private void EnumerateSupportedFrameSizes(VideoCaptureDevice videoDevice) {
             this.Cursor = Cursors.WaitCursor;
             this.videoResolutionsCombo.Items.Clear();
@@ -1167,7 +1168,7 @@ namespace MotionUVC
                 // init done
                 Logger.logTextLn(DateTime.Now, "connectButton_Click: start camera done");
                 //
-                // NOTE:as soon as camera works -> '_justConnected', the webserver is activated depending on Settings.RunWebserver 
+                // NOTE: as soon as camera works -> '_justConnected', the webserver is activated depending on Settings.RunWebserver 
                 //
             } else {
                 // shutdown webserver no matter what
@@ -1184,7 +1185,7 @@ namespace MotionUVC
             }
         }
 
-        // particular control screenshot
+        // control screenshot
         public Bitmap takeCtlScreenShot(Control ctl) {
             Point location = new Point();
             Invoke(new Action(() => { location = ctl.PointToScreen(Point.Empty); }));
@@ -1194,7 +1195,7 @@ namespace MotionUVC
             }
             return bmp;
         }
-        // full window screenshot
+        // full form screenshot
         public Bitmap thisScreenShot() {
             var form = Form.ActiveForm;
             var bmp = new Bitmap(form.Width, form.Height);
@@ -1225,7 +1226,7 @@ namespace MotionUVC
                 } catch {
                     Logger.logTextLn(DateTime.Now, "buttonProperties_Click: Cannot connect to camera properties");
                 }
-                // since above dialog is modal, the only way to get here is after the camera property dialog was closed
+                // since the above dialog is modal, the only way to get here, is after the camera property dialog was closed
                 updateUiCameraProperties();
             }
         }
@@ -1238,7 +1239,7 @@ namespace MotionUVC
             Settings.ExposureAuto = (flag == CameraControlFlags.Auto);
             // get camera exposure value
             if ( Settings.ExposureAuto ) {
-                // it auto exposure, camera exposure time is def 
+                // if auto exposure, camera exposure time is def 
                 int min, max, step, def;
                 _videoDevice.GetCameraPropertyRange(CameraControlProperty.Exposure, out min, out max, out step, out def, out flag);
                 this.hScrollBarExposure.Value = def;
@@ -1250,7 +1251,7 @@ namespace MotionUVC
             }
             Settings.ExposureVal = hScrollBarExposure.Value;
             this.toolTip.SetToolTip(this.hScrollBarExposure, "Camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
-            // needed to update the scroller according to the new values
+            // needed to update the scroller according to the new value
             this.PerformLayout();
         }
 
@@ -1265,7 +1266,7 @@ namespace MotionUVC
             updateUiCameraProperties();
         }
 
-        // force camera to set all prperties to default values
+        // force camera to set all its properties to default values
         private void buttonDefaultCameraProps_Click(object sender, EventArgs e) {
             if ( _videoDevice == null ) {
                 return;
@@ -1374,7 +1375,7 @@ namespace MotionUVC
             return true;
         }
 
-        // set camera exposure & brightness manually via scrollers
+        // set camera exposure & brightness manually via UI scrollers
         private void hScrollBarExposure_Scroll(object sender, ScrollEventArgs e) {
             this.buttonAutoExposure.Enabled = true;
             _videoDevice.SetCameraProperty(CameraControlProperty.Exposure, this.hScrollBarExposure.Value, CameraControlFlags.Manual);
@@ -1383,7 +1384,7 @@ namespace MotionUVC
             this.toolTip.SetToolTip(this.hScrollBarExposure, "Camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
         }
 
-        // camera exposure time monitor helper, average brightness of bmp
+        // EXPERIMENTAL: camera exposure time monitor helper, average brightness of bmp
         public unsafe byte Bmp24bppToGreenAverage(Bitmap bmp) {
             if ( bmp.PixelFormat != PixelFormat.Format24bppRgb ) {
                 return 0;
@@ -1394,14 +1395,14 @@ namespace MotionUVC
             int lenBmpFull = bData.Stride * bmp.Height - 3;
             double collector = 0;
             for ( int i = 0; i < lenBmpFull; i += 3 ) {
-                collector += scan0[i + 1];
+                collector += scan0[i + 1];  // just green is faster than real gray 
             }
             bmp.UnlockBits(bData);
             byte avgGreen = (byte)(collector / lenBmp);
             return avgGreen;
         }
 
-        // gray average ring buffer
+        // EXPERIMENTAL: gray average ring buffer
         static class GrayAvgBuffer {
             static byte[] arr = new byte[3600]; // array with 3600 byte values
             private static int arrNdx = 0;      // active array index  
@@ -1481,7 +1482,7 @@ namespace MotionUVC
                 _justConnected = false;
             }
         }
-        // image grabber for motion detection runs independend from camera new frame event to ensure frame rate being exact 2fps
+        // image grabber for motion detection runs independent from camera new frame event to ensure frame rate being exact 2fps
         void cameraImageGrabber() {
             // on first enter flag
             bool firstImageProcessing = true;
@@ -1881,7 +1882,7 @@ namespace MotionUVC
                 });
             }
 
-            // motion was detected
+            // a motion was detected
             if ( motionDetected ) {
 
                 // save hires image
@@ -1918,7 +1919,7 @@ namespace MotionUVC
                     }
                 }
 
-                // send alarm photo to telegram
+                // send alarm photo to Telegram
                 if ( _alarmNotify ) {
                     Task.Run(() => {
                         try {
@@ -1968,7 +1969,7 @@ namespace MotionUVC
             }
             // in case to add something useful
             if ( m.Msg == WM_KEYDOWN ) {
-                // <ESC> toggles red cross on/off
+                // <ESC> 
                 if ( (Keys)m.WParam == Keys.Escape ) {
                 }
             }
@@ -2083,7 +2084,7 @@ namespace MotionUVC
                 }
             }
 
-            // it is essentiell to call the base behaviour
+            // it is essential to call the base behaviour
             base.WndProc(ref m);
         }
 
@@ -2228,7 +2229,7 @@ namespace MotionUVC
                 return value;
             }
         }
-        // general action form
+        // a general action form
         class ActionButton : Form {
             private Label textbox;
             private Button okButton;
@@ -2388,7 +2389,7 @@ namespace MotionUVC
         [Description("Run app embedded image webserver")]
         [ReadOnly(false)]
         public Boolean RunWebserver { get; set; }
-        [Description("Webserver image type: LORES ? low resolution image vs. PROCESS = processed image")]
+        [Description("Webserver image type: LORES = low resolution image vs. PROCESS = processed image")]
         [ReadOnly(false)]
         public WebserverImageType WebserverImage { get; set; }
         [ReadOnly(true)]
@@ -2524,7 +2525,7 @@ namespace MotionUVC
                 }
                 WebserverImage = WebserverImageType.PROCESS;
             }
-            // ping test address + a ref var with the same purpose
+            // ping test address + a ref var with the same purpose (get/set cannot be a ref var)
             PingTestAddress = ini.IniReadValue(iniSection, "PingTestAddress", "8.8.8.8");
             PingTestAddressRef = PingTestAddress;
             // use Telegram bot
