@@ -47,7 +47,7 @@ namespace MotionUVC
         private string _buttonConnectString;                                 // original text on camera start button
                                                                              
         Bitmap _origFrame = null;                                            // current camera frame original
-        public static Bitmap _currFrame = null;                              // current camera scaled frame (800 x 600)
+        public static Bitmap _currFrame = null;                              // current camera scaled frame (typically 800 x 600)
         Bitmap _procFrame = null;                                            // current camera scaled proecessed frame
         Bitmap _prevFrame = null;                                            // previous camera scaled frame
         double _frameAspectRatio = 1.3333f;                                  // default value until it is overridden via 'firstImageProcessing' in grabber 
@@ -153,6 +153,9 @@ namespace MotionUVC
 
             // get settings from INI
             Settings.fillPropertyGridFromIni();
+
+            // before processing, images will be scaled down to a real image size
+            Settings.ScaledImageSize = new Size(800, 600);                               
 
             // IMessageFilter - an encapsulated message filter
             // - also needed: class declaration "public partial class MainForm: Form, IMessageFilter"
@@ -1161,9 +1164,16 @@ namespace MotionUVC
                 GrayAvgBuffer.ResetData();
                 // disable camera combos
                 EnableConnectionControls(false);
-                // if in automatic mode, minimize app
-                if ( Settings.DetectMotion ) {
-                    this.WindowState = FormWindowState.Minimized;
+                // only if in automatic mode, minimize app
+                if ( Settings.DetectMotion && e.Equals(EventArgs.Empty) ) {
+                    System.Threading.Timer timer = null;
+                    timer = new System.Threading.Timer((obj) => {
+                        Invoke(new Action(() => {
+                            this.WindowState = FormWindowState.Minimized;
+                        }));
+                        timer.Dispose();
+                    },
+                    null, 5000, System.Threading.Timeout.Infinite);
                 }
                 // init done
                 Logger.logTextLn(DateTime.Now, "connectButton_Click: start camera done");
@@ -1496,6 +1506,11 @@ namespace MotionUVC
             int oneCharStampLength = 0;
             int yFill = 0;
             int yDraw = 0;
+            // dispose 'previous image', camera resolution might have changed
+            if ( _prevFrame != null ) {
+                _prevFrame.Dispose();
+                _prevFrame = null;
+            }
             // sync to motion count from today
             string path = System.IO.Path.Combine(Settings.StoragePath, DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             System.IO.Directory.CreateDirectory(path);
@@ -1534,6 +1549,12 @@ namespace MotionUVC
                         _frameAspectRatio = (double)_origFrame.Width / (double)_origFrame.Height;
                         yFill = _origFrame.Height - timestampHeight;
                         yDraw = yFill + 5;
+                        // for later processing scaled images are used 
+                        if ( _origFrame.Width > 800 ) {
+                            Settings.ScaledImageSize = new Size(800, (int)(800.0f / _frameAspectRatio));
+                        } else {
+                            Settings.ScaledImageSize = new Size(_origFrame.Width, _origFrame.Height);
+                        }
                     }
                     excStep = 2;
                     using ( var graphics = Graphics.FromImage(_origFrame) ) {
@@ -1549,12 +1570,12 @@ namespace MotionUVC
                         graphics.DrawString(_motionsDetected.ToString(), timestampFont, Brushes.Black, xPos, yDraw);
                     }
 
-                    // motion detector works with a scaled image 800 x 600
+                    // motion detector works with a scaled image, typically 800 x 600
                     excStep = 3;
                     if ( _currFrame != null ) {
                         _currFrame.Dispose();
                     }
-                    _currFrame = resizeBitmap(_origFrame, new Size(800, 600));
+                    _currFrame = resizeBitmap(_origFrame, Settings.ScaledImageSize);
 
                     // this will become the processed frame
                     excStep = 4;
@@ -1765,6 +1786,10 @@ namespace MotionUVC
                     break;
                 }
                 if ( _roi[i].rect.Width <= 0 ) {
+                    continue;
+                }
+                // camera resolution might not fit to ROI
+                if ( _roi[i].rect.X + _roi[i].rect.Width > currFrame.Width || _roi[i].rect.Y + _roi[i].rect.Height > currFrame.Height ) {
                     continue;
                 }
 
@@ -1998,6 +2023,8 @@ namespace MotionUVC
                 // keep height
                 this.Size = new Size((int)((double)(this.Height - toolbarOfs) * aspectRatioBmp), this.Height);
             }
+            this.Invalidate();
+            this.Update();
         }
         private void MainForm_ResizeBegin(object sender, EventArgs e) {
             _sizeBeforeResize = this.Size;
@@ -2292,6 +2319,8 @@ namespace MotionUVC
         public string CameraMoniker { get; set; }
         [ReadOnly(true)]
         public Size CameraResolution { get; set; }
+        [ReadOnly(true)]
+        public Size ScaledImageSize { get; set; }
         [Description("experimental - let MotionUVC adjust camera exposure time")]
         [ReadOnly(false)]
         public bool ExposureByApp { get; set; }

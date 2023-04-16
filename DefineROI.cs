@@ -53,7 +53,7 @@ namespace MotionUVC {
         // set dirty flag at any change
         private void numericUpDownPosX_ValueChanged(object sender, EventArgs e) {
             this.numericUpDownPosX.ValueChanged -= new System.EventHandler(this.numericUpDownPosX_ValueChanged);
-            this.numericUpDownPosX.Value = Math.Min(this.numericUpDownPosX.Value, 800 - this.numericUpDownWidthX.Value);
+            this.numericUpDownPosX.Value = Math.Min(this.numericUpDownPosX.Value, this.pictureBox.Image.Width - this.numericUpDownWidthX.Value);
             this.numericUpDownPosX.ValueChanged += new System.EventHandler(this.numericUpDownPosX_ValueChanged);
             dirtyFlag = true;
             this.pictureBox.Invalidate();
@@ -61,7 +61,7 @@ namespace MotionUVC {
         }
         private void numericUpDownWidthX_ValueChanged(object sender, EventArgs e) {
             this.numericUpDownWidthX.ValueChanged -= new System.EventHandler(this.numericUpDownWidthX_ValueChanged);
-            this.numericUpDownWidthX.Value = Math.Min(this.numericUpDownWidthX.Value, 800 - this.numericUpDownPosX.Value);
+            this.numericUpDownWidthX.Value = Math.Min(this.numericUpDownWidthX.Value, this.pictureBox.Image.Width - this.numericUpDownPosX.Value);
             this.numericUpDownWidthX.ValueChanged += new System.EventHandler(this.numericUpDownWidthX_ValueChanged);
             dirtyFlag = true;
             this.pictureBox.Invalidate();
@@ -69,7 +69,7 @@ namespace MotionUVC {
         }
         private void numericUpDownPosY_ValueChanged(object sender, EventArgs e) {
             this.numericUpDownPosY.ValueChanged -= new System.EventHandler(this.numericUpDownPosY_ValueChanged);
-            this.numericUpDownPosY.Value = Math.Min(this.numericUpDownPosY.Value, 600 - this.numericUpDownHeightY.Value);
+            this.numericUpDownPosY.Value = Math.Min(this.numericUpDownPosY.Value, this.pictureBox.Image.Height - this.numericUpDownHeightY.Value);
             this.numericUpDownPosY.ValueChanged += new System.EventHandler(this.numericUpDownPosY_ValueChanged);
             dirtyFlag = true;
             this.pictureBox.Invalidate();
@@ -77,7 +77,7 @@ namespace MotionUVC {
         }
         private void numericUpDownHeightY_ValueChanged(object sender, EventArgs e) {
             this.numericUpDownHeightY.ValueChanged -= new System.EventHandler(this.numericUpDownHeightY_ValueChanged);
-            this.numericUpDownHeightY.Value = Math.Min(this.numericUpDownHeightY.Value, 600 - this.numericUpDownPosY.Value);
+            this.numericUpDownHeightY.Value = Math.Min(this.numericUpDownHeightY.Value, this.pictureBox.Image.Height - this.numericUpDownPosY.Value);
             this.numericUpDownHeightY.ValueChanged += new System.EventHandler(this.numericUpDownHeightY_ValueChanged);
             dirtyFlag = true;
             this.pictureBox.Invalidate();
@@ -165,7 +165,7 @@ namespace MotionUVC {
 
         // draw a rectangle into pictureBox
         private void pictureBox_MouseDown(object sender, MouseEventArgs e) {
-            if ( e.X >= 800 || e.Y >= 600 ) {
+            if ( e.X >= this.pictureBox.Image.Width || e.Y >= this.pictureBox.Image.Height ) {
                 return;
             }
             currRectDrawing = true;
@@ -176,7 +176,7 @@ namespace MotionUVC {
             this.pictureBox.Update();
         }
         private void pictureBox_MouseMove(object sender, MouseEventArgs e) {
-            if ( e.X >= 800 || e.Y >= 600 ) {
+            if ( e.X >= this.pictureBox.Image.Height || e.Y >= this.pictureBox.Image.Height ) {
                 return;
             }
             if ( !currRectDrawing ) {
