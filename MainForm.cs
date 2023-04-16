@@ -2522,6 +2522,9 @@ namespace MotionUVC
                 }            
             }
         }
+        [Description("Free storage space")]
+        [ReadOnly(true)]
+        public string FreeStorageSpace { get; set; }
         [Description("App writes to logfile")]
         [ReadOnly(false)]
         public Boolean WriteLogfile { get; set; }
@@ -2733,6 +2736,15 @@ namespace MotionUVC
             StoragePath = ini.IniReadValue(iniSection, "StoragePath", Application.StartupPath + "\\");
             // alternative app storage path, if above path is full
             StoragePathAlt = ini.IniReadValue(iniSection, "StoragePathAlt", "");
+            // free storage space
+            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+            double len = MainForm.driveFreeBytes(StoragePath);
+            int order = 0;
+            while ( len >= 1024 && order < sizes.Length - 1 ) {
+                order++;
+                len = len / 1024;
+            }
+            FreeStorageSpace = String.Format("{0:0.##} {1}", len, sizes[order]);
             // app writes logfile
             if ( bool.TryParse(ini.IniReadValue(iniSection, "WriteLogfile", "False"), out tmpBool) ) {
                 WriteLogfile = tmpBool;
