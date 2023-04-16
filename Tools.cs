@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;       // DLLImport, Marshal
 using System.IO;                            // File, Path
 using System.Globalization;
 using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Threading;
 
 namespace GrzTools
 {
@@ -45,6 +47,32 @@ namespace GrzTools
                 lsw.Close();
             } catch {; }
             _busy = false;
+        }
+    }
+
+    // non blocking & self closing message box
+    public class AutoMessageBox {
+        AutoMessageBox(string text, string caption, int timeout) {
+            Form w = new Form() { Size = new Size(0, 0) };
+            TaskEx.Delay(timeout)
+                  .ContinueWith((t) => w.Close(), TaskScheduler.FromCurrentSynchronizationContext());
+            MessageBox.Show(w, text, caption);
+        }
+        public static void Show(string text, string caption, int timeout) {
+            new AutoMessageBox(text, caption, timeout);
+        }
+        static class TaskEx {
+            public static Task Delay(int dueTimeMs) {
+                TaskCompletionSource<object> tcs = new TaskCompletionSource<object>();
+                CancellationTokenRegistration ctr = new CancellationTokenRegistration();
+                System.Threading.Timer timer = new System.Threading.Timer(delegate (object self) {
+                    ctr.Dispose();
+                    ((System.Threading.Timer)self).Dispose();
+                    tcs.TrySetResult(null);
+                });
+                timer.Change(dueTimeMs, -1);
+                return tcs.Task;
+            }
         }
     }
 

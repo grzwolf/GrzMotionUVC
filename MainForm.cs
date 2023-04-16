@@ -24,6 +24,9 @@ using static MotionUVC.AppSettings;
 using GrzTools;
 using System.Drawing.Drawing2D;
 using System.Diagnostics;
+using System.Linq;
+using System.Windows.Forms.Design;
+using System.Drawing.Design;
 
 namespace MotionUVC
 {
@@ -90,6 +93,10 @@ namespace MotionUVC
         int _telegramOnErrorCount = 0;
         int _telegramLiveTickErrorCount = 0;
         bool _runPing = false;
+
+        long ONE_GB =  1000000000;                                            // constants for file delete  
+        long TWO_GB =  2000000000;                                            
+        long TEN_GB = 10000000000;
 
         // the one and only way to avoid the 'red cross exception' in pictureBox: "wrong parameter" 
         public class PictureBoxPlus : PictureBox {
@@ -395,11 +402,13 @@ namespace MotionUVC
                 Task.Run(() => { makeMotionSequence(subList, Settings.CameraResolution); });
             }
 
-            // log once per hour the current app status
+            // once per hour
             if ( DateTime.Now.Minute % 60 == 0  && DateTime.Now.Second < 31) {
-                // get number of consecutive motions
+
+                // log once per hour the current app status
                 int consecutiveCount = 0;
                 try {
+                    // get number of consecutive motions
                     for ( int i = 0; i < _motionsList.Count; i++ ) {
                         if ( _motionsList[i].consecutive ) {
                             consecutiveCount++;
@@ -408,7 +417,33 @@ namespace MotionUVC
                 } catch ( Exception ex ) {
                     Logger.logTextLn(DateTime.Now, String.Format("timerFlowControl_Tick ex:{0}", ex.Message));
                 }
-                Logger.logTextLn(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, consecutiveCount, _procMs, (_Bot != null))); 
+                Logger.logTextLn(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, consecutiveCount, _procMs, (_Bot != null)));
+
+                // check if remaining disk space is less than 2GB
+                if ( Settings.SaveMotion && driveFreeBytes(Settings.StoragePath) < TWO_GB ) {
+                    Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: free disk space <2GB");
+                    // delete avi-files in storage folder, try to gain 10GB space (could mean all of them)
+                    deleteAviFiles(Settings.StoragePath, TEN_GB);
+                    // if the remaining disk space is still less than 1GB, start deleteing the oldest image folder
+                    if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
+                        Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: free disk space <1GB");
+                        deleteOldestImageFolder(Settings.StoragePath);
+                        // if finally the remaining disk space is still less than 1GB
+                        if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
+                            // check alternative storage path and switch to it if feasible
+                            if ( System.IO.Directory.Exists(Settings.StoragePathAlt) && driveFreeBytes(Settings.StoragePathAlt) > TEN_GB ) {
+                                Settings.StoragePath = Settings.StoragePathAlt;
+                                Logger.logTextLn(DateTime.Now, "Now using alternative storage path.");
+                                return;
+                            }
+                            // if finally the remaining disk space were still less than 1GB --> give up storing anything on disk
+                            Logger.logTextLn(DateTime.Now, "MotionUVC stops saving detected motions due to lack of disk space.");
+                            Settings.SaveMotion = false;
+                            Settings.SaveSequences = false;
+                            Settings.writePropertyGridToIni();
+                        }
+                    }
+                }
             }
 
             // one check every 15 minutes
@@ -2115,6 +2150,50 @@ namespace MotionUVC
             base.WndProc(ref m);
         }
 
+        // delete avi files
+        void deleteAviFiles(string homeFolder, long gainedSpace) {
+            // get avi-files in homeFolder and have the file array sorted by last write time in ascending order
+            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(homeFolder);
+            System.IO.FileInfo[] fiArr = di.GetFiles("*.avi").OrderBy(p => p.LastWriteTime).ToArray();
+            // delete oldest avi-files until gainedSpace is achieved as goal (could mean all of them)
+            long deletedSpace = 0;
+            foreach ( System.IO.FileInfo fi in fiArr ) {
+                try {
+                    deletedSpace += fi.Length;
+                    fi.Delete();
+                } catch ( Exception ) {; }
+                if ( deletedSpace > gainedSpace ) {
+                    break;
+                }
+            }
+        }
+        // delete oldest image folder
+        void deleteOldestImageFolder(string homeFolder) {
+            FileSystemInfo fileInfo = new DirectoryInfo(homeFolder).GetFileSystemInfos().OrderBy(fi => fi.CreationTime).First();
+            Directory.Delete(fileInfo.FullName, true);
+        }
+
+        // PInvoke for Windows API function GetDiskFreeSpaceEx
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetDiskFreeSpaceEx(string lpDirectoryName, out ulong lpFreeBytesAvailable, out ulong lpTotalNumberOfBytes, out ulong lpTotalNumberOfFreeBytes);
+        public static long driveFreeBytes(string folderName) {
+            long freespace = -1;
+            if ( string.IsNullOrEmpty(folderName) ) {
+                return freespace;
+            }
+            if ( !folderName.EndsWith("\\") ) {
+                folderName += '\\';
+            }
+            ulong free = 0, dummy1 = 0, dummy2 = 0;
+            if ( GetDiskFreeSpaceEx(folderName, out free, out dummy1, out dummy2) ) {
+                freespace = (long)free;
+                return freespace;
+            } else {
+                return freespace;
+            }
+        }
+
         // manually call to app settings: PropertyGrid dialog
         private void buttonSettings_Click(object sender, EventArgs e) {
             // transfer current app settings to Settings class
@@ -2287,6 +2366,21 @@ namespace MotionUVC
             }
         }
 
+        public class FolderNameEditorWithRootFolder : UITypeEditor {
+            public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context) {
+                return UITypeEditorEditStyle.Modal;
+            }
+
+            public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value) {
+                using ( FolderBrowserDialog dlg = new FolderBrowserDialog() ) {
+                    dlg.SelectedPath = (string)value;
+                    if ( dlg.ShowDialog() == DialogResult.OK )
+                        return dlg.SelectedPath;
+                }
+                return base.EditValue(context, provider, value);
+            }
+        }
+
         // make a copy of all class properties
         public void CopyAllTo(AppSettings source, out AppSettings target)
         {
@@ -2349,19 +2443,77 @@ namespace MotionUVC
         [Description("Network test IP address for ping")]
         public string PingTestAddress { get; set; }
         public string PingTestAddressRef;
+        private string storagePath;
         [Description("App storage path: images, ini, logfiles")]
         [ReadOnly(false)]
-        private string storagePath;
+        [EditorAttribute(typeof(FolderNameEditorWithRootFolder), typeof(UITypeEditor))]
         public string StoragePath { 
             get {
                 return this.storagePath;
             } 
             set {
                 this.storagePath = value;
-                if ( !this.storagePath.EndsWith("\\") ) {
-                    this.storagePath += "\\";
+                if ( this.storagePath.Length == 0 ) {
+                    return;
+                }
+                if ( this.storagePath == "\\" ) {
+                    AutoMessageBox.Show(String.Format("StoragePath = '{0}' is not regular.", this.storagePath), "Error", 5000);
+                    this.storagePath = "";
+                    return;
+                }
+                if ( this.storagePath.IndexOf(":") != 1 ) {
+                    AutoMessageBox.Show(String.Format("StoragePath = '{0}' is not valid.", this.storagePath), "Error", 5000);
+                    return;
+                }
+                if ( this.storagePath.IndexOf("\\") != 2 ) {
+                    AutoMessageBox.Show(String.Format("StoragePath = '{0}' is not acceptable.", this.storagePath), "Error", 5000);
+                    return;
+                }
+                try {
+                    Directory.CreateDirectory(this.storagePath);
+                    if ( !this.storagePath.EndsWith("\\") ) {
+                        this.storagePath += "\\";
+                    }
+                } catch ( Exception ) {
+                    AutoMessageBox.Show(String.Format("StoragePath = '{0}' is not accessible.", this.storagePath), "Error", 5000);
                 }
             } 
+        }
+        private string storagePathAlt;
+        [Description("Alternative app storage path, if regular storage path (see above) is full")]
+        [ReadOnly(false)]
+        [EditorAttribute(typeof(FolderNameEditorWithRootFolder), typeof(UITypeEditor))]
+        public string StoragePathAlt {
+            get {
+                return this.storagePathAlt;
+            }
+            set {
+                this.storagePathAlt = value;
+                if ( this.storagePathAlt.Length == 0 ) {
+                    return;
+                }
+                if ( this.storagePathAlt == "\\" ) {
+                    AutoMessageBox.Show(String.Format("StoragePathAlt = '{0}' is not regular.", this.storagePathAlt), "Error", 5000);
+                    this.storagePathAlt = "";
+                    return;
+                }
+                if ( this.storagePathAlt.IndexOf(":") != 1 ) {
+                    AutoMessageBox.Show(String.Format("StoragePathAlt = '{0}' is not valid.", this.storagePathAlt), "Error", 5000);
+                    return;
+                }
+                if ( this.storagePathAlt.IndexOf("\\") != 2 ) {
+                    AutoMessageBox.Show(String.Format("StoragePathAlt = '{0}' is not acceptable.", this.storagePathAlt), "Error", 5000);
+                    return;
+                }
+                try {
+                    Directory.CreateDirectory(this.storagePathAlt);
+                    if ( !this.storagePathAlt.EndsWith("\\") ) {
+                        this.storagePathAlt += "\\";
+                    }
+                } catch ( Exception ) {
+                    AutoMessageBox.Show(String.Format("StoragePathAlt = '{0}' is not accessible.", this.storagePathAlt), "Error", 5000);
+                }            
+            }
         }
         [Description("App writes to logfile")]
         [ReadOnly(false)]
@@ -2572,6 +2724,8 @@ namespace MotionUVC
             BotAuthenticationToken = ini.IniReadValue(iniSection, "BotAuthenticationToken", "");
             // app common storage path
             StoragePath = ini.IniReadValue(iniSection, "StoragePath", Application.StartupPath + "\\");
+            // alternative app storage path, if above path is full
+            StoragePathAlt = ini.IniReadValue(iniSection, "StoragePathAlt", "");
             // app writes logfile
             if ( bool.TryParse(ini.IniReadValue(iniSection, "WriteLogfile", "False"), out tmpBool) ) {
                 WriteLogfile = tmpBool;
@@ -2641,6 +2795,8 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "RebootPingCounter", RebootPingCounter.ToString());
             // app storage path
             ini.IniWriteValue(iniSection, "StoragePath", StoragePath.ToString());
+            // alternative app storage path
+            ini.IniWriteValue(iniSection, "StoragePathAlt", StoragePathAlt.ToString());
             // app writes logfile
             ini.IniWriteValue(iniSection, "WriteLogfile", WriteLogfile.ToString());
             // run webserver
