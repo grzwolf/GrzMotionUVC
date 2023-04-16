@@ -406,6 +406,10 @@ namespace MotionUVC
             if ( DateTime.Now.Minute % 60 == 0  && DateTime.Now.Second < 31) {
 
                 // log once per hour the current app status
+                bool currentWriteLogStatus = Settings.WriteLogfile;
+                if ( !Settings.WriteLogfile ) {
+                    Settings.WriteLogfile = true;
+                }
                 int consecutiveCount = 0;
                 try {
                     // get number of consecutive motions
@@ -418,6 +422,9 @@ namespace MotionUVC
                     Logger.logTextLn(DateTime.Now, String.Format("timerFlowControl_Tick ex:{0}", ex.Message));
                 }
                 Logger.logTextLn(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, consecutiveCount, _procMs, (_Bot != null)));
+                if ( !currentWriteLogStatus ) {
+                    Settings.WriteLogfile = currentWriteLogStatus;
+                }
 
                 // check if remaining disk space is less than 2GB
                 if ( Settings.SaveMotion && driveFreeBytes(Settings.StoragePath) < TWO_GB ) {
