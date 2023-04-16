@@ -1164,8 +1164,8 @@ namespace MotionUVC
                 GrayAvgBuffer.ResetData();
                 // disable camera combos
                 EnableConnectionControls(false);
-                // only if in automatic mode, minimize app
-                if ( Settings.DetectMotion && e.Equals(EventArgs.Empty) ) {
+                // minimize app if set
+                if ( Settings.DetectMotion && Settings.MinimizeApp && e.Equals(EventArgs.Empty) ) {
                     System.Threading.Timer timer = null;
                     timer = new System.Threading.Timer((obj) => {
                         Invoke(new Action(() => {
@@ -2377,10 +2377,13 @@ namespace MotionUVC
         public Boolean SaveSequences { get; set; }
         [Description("Save hi resolution motion detection images")] 
         [ReadOnly(false)]
-        public Boolean SaveMotion { get; set; }
+        public Boolean SaveMotion { get; set; } 
         [Description("Auto start motion detection at app start")]
         [ReadOnly(false)]
         public Boolean DetectMotion { get; set; }
+        [Description("Minimize app at motion detection")]
+        [ReadOnly(false)]
+        public Boolean MinimizeApp { get; set; }
         [Description("Motion image filenename: img<number>.jpg vs. <timestamp>.jpg")]
         [ReadOnly(false)]
         public MotionFilenameConvention MotionFilename { get; set; }
@@ -2503,10 +2506,14 @@ namespace MotionUVC
             // save motion images
             if ( bool.TryParse(ini.IniReadValue(iniSection, "SaveMotion", "False"), out tmpBool) ) {
                 SaveMotion = tmpBool;
-            }
+            } 
             // auto detect motion at app start
             if ( bool.TryParse(ini.IniReadValue(iniSection, "DetectMotion", "False"), out tmpBool) ) {
                 DetectMotion = tmpBool;
+            }
+            // minimize app while motion detection
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "MinimizeApp", "True"), out tmpBool) ) {
+                MinimizeApp = tmpBool;
             }
             // saved motion filename convention
             tmpStr = ini.IniReadValue(iniSection, "MotionFilenameConvention", "empty");
@@ -2619,9 +2626,11 @@ namespace MotionUVC
             // save motion sequences
             ini.IniWriteValue(iniSection, "SaveSequences", SaveSequences.ToString());
             // save motion images
-            ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString());
+            ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString()); 
             // auto detect motion at app start
             ini.IniWriteValue(iniSection, "DetectMotion", DetectMotion.ToString());
+            // minimze app while motion detection
+            ini.IniWriteValue(iniSection, "MinimizeApp", MinimizeApp.ToString());
             // motion filename convention
             ini.IniWriteValue(iniSection, "MotionFilenameConvention", MotionFilename.ToString());
             // make daily motion video
