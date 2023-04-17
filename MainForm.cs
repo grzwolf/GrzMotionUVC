@@ -2135,14 +2135,18 @@ namespace MotionUVC
                         return;
                     }
                     EnableConnectionControls(false);
-                    _origFrame = new Bitmap(of.FileName);
-                    _currFrame = resizeBitmap(_origFrame, new Size(800, 600));
-                    _procFrame = (Bitmap)_currFrame.Clone();
-                    _prevFrame = (Bitmap)_currFrame.Clone();
                     try {
+                        _origFrame = new Bitmap(of.FileName);
+                        double ar = (double)_origFrame.Width / (double)_origFrame.Height;
+                        int height = (int)(800.0f / ar);
+                        _currFrame = resizeBitmap(_origFrame, new Size(800, height));
+                        _procFrame = (Bitmap)_currFrame.Clone();
+                        _prevFrame = (Bitmap)_currFrame.Clone();
                         // show image in picturebox
                         this.pictureBox.Image = _currFrame;
-                    } catch {; }
+                    } catch (Exception e) {
+                        MessageBox.Show(e.Message, "Error"); 
+                    }
                 }
                 // show About box: check for added menu item's message ID
                 if ( m.WParam.ToInt32() == 1234 ) {
