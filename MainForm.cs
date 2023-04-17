@@ -806,8 +806,8 @@ namespace MotionUVC
                     Settings.PingOk = false;
                     pingFailCounter++;
                 }
-                // reboot vs. network restore AFTER 10x subsequent ping fails in 100s 
-                if ( pingFailCounter > 10 ) {
+                // reboot AFTER 10x subsequent ping fails in 100s 
+                if ( (pingFailCounter > 0) && (pingFailCounter % 10 == 0) ) {
                     Logger.logTextLn(DateTime.Now, "network reset after 10x ping fail");
                     bool networkUp = System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable();
                     if ( networkUp ) {
