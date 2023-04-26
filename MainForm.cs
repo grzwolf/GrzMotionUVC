@@ -107,7 +107,165 @@ namespace MotionUVC
                 } catch {; }
             }
         }
+
+        // picturebox zoom & pan
         private PictureBoxPlus pictureBox;
+        private int _iScaleStep = 0;
+        private System.Windows.Rect _iRect = new System.Windows.Rect();
+        private System.Drawing.Point _mouseDown = new System.Drawing.Point();
+        private bool _stillImage = false;
+        private System.Windows.Point _eOld = new System.Windows.Point(-1, -1);
+        protected override void OnMouseWheel(MouseEventArgs e) {
+            // mouse shall be in the ranges of pictureBox
+            if ( e.X >= 0 && e.X < pictureBox.Width && e.Y >= 60 && e.Y < 60 + pictureBox.Height ) {
+                // sanity check
+                if ( !_stillImage ) {
+                    return;
+                }
+
+                // init
+                if ( _eOld.X == -1 ) {
+                    _eOld.X = e.X;
+                    _eOld.Y = e.Y;
+                }
+
+                // happens once at start
+                if ( _iScaleStep == 0 ) {
+                    _iRect = new System.Windows.Rect(0, 0, _origFrame.Width, _origFrame.Height);
+                    pictureBox.Image = _origFrame;
+                }
+
+                // mouse was potentially moved before coming here
+                double xMove = e.X - _eOld.X;
+                double yMove = e.Y - _eOld.Y;
+
+                // wheel direction
+                if ( e.Delta != 0 ) {
+
+                    // picturebox y offset
+                    int yOfs = this.ClientSize.Height - pictureBox.Height;
+
+                    // actual zooming
+                    if ( e.Delta > 0 ) { // zoom in
+                        // mouse was potentially moved before coming here, correct it matching to the latest known zoom scale
+                        xMove /= Math.Pow(0.9f, _iScaleStep);
+                        yMove /= Math.Pow(0.9f, _iScaleStep);
+
+                        // somehow limit zoom
+                        if ( _iRect.Width * 0.9f > this.pictureBox.Size.Width / 4 ) {
+                            _iScaleStep++;
+                            _iRect = new System.Windows.Rect(_iRect.X, _iRect.Y, _iRect.Width * 0.9f, _iRect.Height * 0.9f);
+                        } else {
+                            return;
+                        }
+                    } else { // zoom out
+                        // mouse was potentially moved before coming here, correct it matching to the latest known zoom scale
+                        xMove *= Math.Pow(0.9f, _iScaleStep);
+                        yMove *= Math.Pow(0.9f, _iScaleStep);
+
+                        // border constraints: width & height
+                        if ( _iRect.Width / 0.9f > _origFrame.Width ) {
+                            _iRect = new System.Windows.Rect(_iRect.X, _iRect.Y, _origFrame.Width, _origFrame.Height);
+                        } else {
+                            _iScaleStep--;
+                            _iRect = new System.Windows.Rect(_iRect.X, _iRect.Y, _iRect.Width / 0.9f, _iRect.Height / 0.9f);
+                        }
+                    }
+
+                    // mouse cursor X ratio to pictureBox width in percent
+                    double pctXpos = (double)e.X / (double)pictureBox.ClientSize.Width;
+                    // margin between original Bmp and zoomed tile of Bmp
+                    double xMargin = _origFrame.Width - _iRect.Width;
+                    // 'cursor X ratio' moves left bound of zoomed tile to xLeft position
+                    double xLeft = xMargin * pctXpos;
+                    // correct 'previous e.X before coming here (mouse move by user)' vs. 'current e.X
+                    _iRect.X = Math.Max(0, xLeft + xMove);
+
+                    // the same to y
+                    double pctYpos = (double)(e.Y - yOfs) / (double)pictureBox.ClientSize.Height;
+                    _iRect.Y = Math.Max(0, (int)((double)(_origFrame.Height - _iRect.Height) * pctYpos) + yMove);
+                    
+                    // border constraints: x + width & y + height
+                    if ( _iRect.X + _iRect.Width > _origFrame.Width ) {
+                        _iRect.X = _origFrame.Width - _iRect.Width;
+                    }
+                    if ( _iRect.Y + _iRect.Height > _origFrame.Height ) {
+                        _iRect.Y = _origFrame.Height - _iRect.Height;
+                    }
+                    
+                    // render image
+                    Bitmap bmp = _origFrame.Clone(new Rectangle((int)_iRect.X, (int)_iRect.Y, (int)_iRect.Width, (int)_iRect.Height), PixelFormat.Format24bppRgb);
+                    pictureBox.Image = bmp;
+
+                    // save current mouse position
+                    _eOld = new System.Windows.Point(e.X, e.Y);
+                }
+                // 1 : 1
+                if ( _iScaleStep == 0 ) {
+                    _iRect = new System.Windows.Rect(0, 0, _origFrame.Width, _origFrame.Height);
+                    pictureBox.Image = _origFrame;
+                }
+            }
+            base.OnMouseWheel(e);
+        }
+        private void pictureBox_OnMouseDown(object sender, MouseEventArgs e) {
+            // sanity chack
+            if ( !_stillImage ) {
+                return;
+            }
+
+            // initial mouse down position
+            if ( e.Button == MouseButtons.Left ) {
+                int yOfs = this.ClientSize.Height - pictureBox.Height;
+                _mouseDown.X = e.X;
+                _mouseDown.Y = e.Y;
+            }
+
+            // reset all zoom & pan to 1:1
+            if ( e.Button == MouseButtons.Right ) {
+                _eOld = new System.Windows.Point(-1, -1);
+                _iScaleStep = 0;
+                _mouseDown = new System.Drawing.Point();
+                _iRect = new System.Windows.Rect(0, 0, _origFrame.Width, _origFrame.Height);
+                pictureBox.Image = _origFrame;
+            }
+        }
+        private void pictureBox_OnMouseMove(object sender, MouseEventArgs e) {
+            if ( !_stillImage ) {
+                return;
+            }
+            if ( e.Button == MouseButtons.Left ) {
+                double pixelScaler = (double)_iRect.Width / (double)pictureBox.Width;
+                int deltaX = (int)Math.Round((double)(e.X - _mouseDown.X) * pixelScaler);
+                if ( deltaX != 0 ) {
+                    int newX = (int)_iRect.X - deltaX;
+                    if ( newX + _iRect.Width > _origFrame.Width ) {
+                        newX = _origFrame.Width - (int)_iRect.Width;
+                    }
+                    if ( newX < 0 ) {
+                        newX = 0;
+                    }
+                    _iRect.X = newX;
+                }
+                int yOfs = this.ClientSize.Height - pictureBox.Height;
+                int deltaY = (int)Math.Round((double)(e.Y - _mouseDown.Y) * pixelScaler);
+                if ( deltaY != 0 ) {
+                    int newY = (int)_iRect.Y - deltaY;
+                    if ( newY + _iRect.Height > _origFrame.Height ) {
+                        newY = _origFrame.Height - (int)_iRect.Height;
+                    }
+                    if ( newY < 0 ) {
+                        newY = 0;
+                    }
+                    _iRect.Y = newY;
+                }
+                Bitmap bmp = _origFrame.Clone(new Rectangle((int)_iRect.X, (int)_iRect.Y, (int)_iRect.Width, (int)_iRect.Height), PixelFormat.Format24bppRgb);
+                pictureBox.Image = bmp;
+                // memorize latest mouse down position
+                _mouseDown.X = e.X;
+                _mouseDown.Y = e.Y;
+            }
+        }
 
         public MainForm() {
             // form designer standard init
@@ -128,6 +286,8 @@ namespace MotionUVC
             this.pictureBox.TabIndex = 0;
             this.pictureBox.TabStop = false;
             this.tableLayoutPanelGraphs.Controls.Add(this.pictureBox, 0, 0);
+            this.pictureBox.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pictureBox_OnMouseDown);
+            this.pictureBox.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pictureBox_OnMouseMove);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).EndInit();
 
             // prevent flickering when paint: https://stackoverflow.com/questions/24910574/how-to-prevent-flickering-when-using-paint-method-in-c-sharp-winforms  
@@ -1171,6 +1331,8 @@ namespace MotionUVC
             ResetExceptionState(this.pictureBox);
 
             if ( (_buttonConnectString == this.connectButton.Text) && (sender != null) ) {
+                // no still image anymore
+                _stillImage = false;
                 // only connect if feasible
                 if ( (_videoDevice == null) || (_videoDevice.VideoCapabilities == null) || (_videoDevice.VideoCapabilities.Length == 0) || (this.videoResolutionsCombo.Items.Count == 0) ) {
                     return;
@@ -2134,7 +2296,6 @@ namespace MotionUVC
                         EnableConnectionControls(true);
                         return;
                     }
-                    EnableConnectionControls(false);
                     try {
                         _origFrame = new Bitmap(of.FileName);
                         double ar = (double)_origFrame.Width / (double)_origFrame.Height;
@@ -2142,8 +2303,14 @@ namespace MotionUVC
                         _currFrame = resizeBitmap(_origFrame, new Size(800, height));
                         _procFrame = (Bitmap)_currFrame.Clone();
                         _prevFrame = (Bitmap)_currFrame.Clone();
+                        // reset zoom & pan
+                        _eOld = new System.Windows.Point(-1, -1);
+                        _stillImage = true;
+                        _iScaleStep = 0;
+                        _mouseDown = new System.Drawing.Point();
+                        _iRect = new System.Windows.Rect(0, 0, _origFrame.Width, _origFrame.Height);
                         // show image in picturebox
-                        this.pictureBox.Image = _currFrame;
+                        this.pictureBox.Image = _origFrame;
                     } catch (Exception e) {
                         MessageBox.Show(e.Message, "Error"); 
                     }
