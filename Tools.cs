@@ -14,8 +14,20 @@ namespace GrzTools
 {
     // logger class
     public static class Logger {
-        // public access
+        // write to log flag
         public static bool WriteToLog { get; set; }
+        // unconditional logging
+        public static void logTextLnU(DateTime now, string logtxt) {
+            _writeLogOverrule = true;
+            logTextLn(now, logtxt);
+            _writeLogOverrule = false;
+        }
+        public static void logTextU(string logtxt) {
+            _writeLogOverrule = true;
+            logTextToFile(logtxt);
+            _writeLogOverrule = false;
+        }
+        // logging depending on WriteToLog
         public static void logTextLn(DateTime now, string logtxt) {
             logtxt = now.ToString("dd.MM.yyyy HH:mm:ss_fff ", CultureInfo.InvariantCulture) + logtxt;
             logText(logtxt + "\r\n");
@@ -24,9 +36,10 @@ namespace GrzTools
             logTextToFile(logtxt);
         }
         // private
+        private static bool _writeLogOverrule = false;
         private static bool _busy = false;
         private static void logTextToFile(string logtxt) {
-            if ( !WriteToLog ) {
+            if ( !WriteToLog && !_writeLogOverrule ) {
                 return;
             }
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();

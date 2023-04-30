@@ -337,13 +337,13 @@ namespace MotionUVC
             AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
             Settings.WriteLogfile = bool.Parse(ini.IniReadValue("MotionUVC", "WriteLogFile", "False"));
             Logger.WriteToLog = Settings.WriteLogfile;
-            Logger.logText("\r\n---------------------------------------------------------------------------------------------------------------------------\r\n");
+            Logger.logTextU("\r\n---------------------------------------------------------------------------------------------------------------------------\r\n");
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
-            Logger.logTextLn(DateTime.Now, String.Format("{0} {1}", assembly.FullName, fvi.FileVersion));
+            Logger.logTextLnU(DateTime.Now, String.Format("{0} {1}", assembly.FullName, fvi.FileVersion));
             // distinguish between reular app start and a restart after app crash 
             if ( bool.Parse(ini.IniReadValue("MotionUVC", "AppCrash", "False")) ) {
-                Logger.logTextLn(DateTime.Now, "App was restarted after crash");
+                Logger.logTextLnU(DateTime.Now, "App was restarted after crash");
             } else {
                 Logger.logTextLn(DateTime.Now, "App start regular");
             }
@@ -415,9 +415,9 @@ namespace MotionUVC
                 Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: ping ok");
             } else {
                 Settings.PingOk = false;
-                Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: ping failed");
+                Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: ping failed");
                 if ( Settings.UseTelegramBot ) {
-                    Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram not activated due to ping fail");
+                    Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram not activated due to ping fail");
                 }
             }
             if ( Settings.PingOk ) {
@@ -429,7 +429,7 @@ namespace MotionUVC
                         _Bot.OnError += OnError;
                         _Bot.OnLiveTick += OnLiveTick;
                         this.timerCheckTelegramLiveTick.Start();
-                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
+                        Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
                     } else {
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
                     }
@@ -516,7 +516,7 @@ namespace MotionUVC
                         }
                     }
                 } catch ( Exception exc ) {
-                    Logger.logTextLn(DateTime.Now, String.Format("timerFlowControl_Tick exc:{0}", exc.Message));
+                    Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick exc:{0}", exc.Message));
                     _alarmSequenceBusy = false;
                     return;
                 }
@@ -579,32 +579,32 @@ namespace MotionUVC
                         }
                     }
                 } catch ( Exception ex ) {
-                    Logger.logTextLn(DateTime.Now, String.Format("timerFlowControl_Tick ex:{0}", ex.Message));
+                    Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick ex:{0}", ex.Message));
                 }
-                Logger.logTextLn(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, consecutiveCount, _procMs, (_Bot != null)));
+                Logger.logTextLnU(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, consecutiveCount, _procMs, (_Bot != null)));
                 if ( !currentWriteLogStatus ) {
                     Settings.WriteLogfile = currentWriteLogStatus;
                 }
 
                 // check if remaining disk space is less than 2GB
                 if ( Settings.SaveMotion && driveFreeBytes(Settings.StoragePath) < TWO_GB ) {
-                    Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: free disk space <2GB");
+                    Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: free disk space <2GB");
                     // delete avi-files in storage folder, try to gain 10GB space (could mean all of them)
                     deleteAviFiles(Settings.StoragePath, TEN_GB);
                     // if the remaining disk space is still less than 1GB, start deleteing the oldest image folder
                     if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
-                        Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: free disk space <1GB");
+                        Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: free disk space <1GB");
                         deleteOldestImageFolder(Settings.StoragePath);
                         // if finally the remaining disk space is still less than 1GB
                         if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
                             // check alternative storage path and switch to it if feasible
                             if ( System.IO.Directory.Exists(Settings.StoragePathAlt) && driveFreeBytes(Settings.StoragePathAlt) > TEN_GB ) {
                                 Settings.StoragePath = Settings.StoragePathAlt;
-                                Logger.logTextLn(DateTime.Now, "Now using alternative storage path.");
+                                Logger.logTextLnU(DateTime.Now, "Now using alternative storage path.");
                                 return;
                             }
                             // if finally the remaining disk space were still less than 1GB --> give up storing anything on disk
-                            Logger.logTextLn(DateTime.Now, "MotionUVC stops saving detected motions due to lack of disk space.");
+                            Logger.logTextLnU(DateTime.Now, "MotionUVC stops saving detected motions due to lack of disk space.");
                             Settings.SaveMotion = false;
                             Settings.SaveSequences = false;
                             Settings.writePropertyGridToIni();
@@ -618,7 +618,7 @@ namespace MotionUVC
 
                 // try to restart Telegram, if it should run but it doesn't due to an internal fail
                 if ( Settings.UseTelegramBot && _Bot == null ) {
-                    Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: Telegram restart");
+                    Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: Telegram restart");
                     _telegramOnErrorCount = 0;
                     _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
                     _Bot.OnMessage += OnMessage;
@@ -681,7 +681,7 @@ namespace MotionUVC
                 // prevent 'make video' loops in case of errors
                 if ( _dailyVideoErrorCount == 5 ) {
                     _dailyVideoErrorCount = int.MaxValue;
-                    Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: too many 'make video' errors, giving up for today");
+                    Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: too many 'make video' errors, giving up for today");
                 }
                 // some time after 19:00 _dailyVideoDone might become TRUE, it needs to reset after midnight
                 if ( Settings.DailyVideoDone && DateTime.Now.TimeOfDay >= _midNight && DateTime.Now.TimeOfDay < _videoTime ) {
@@ -691,7 +691,7 @@ namespace MotionUVC
                     ini.IniWriteValue("MotionUVC", "DailyVideoDoneForToday", "False");
                     _dailyVideoErrorCount = 0;
                     _dailyVideoInProgress = false;
-                    Logger.logTextLn(DateTime.Now, "timerFlowControl_Tick: reset video done flag at midnight");
+                    Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: reset video done flag at midnight");
                     // sync to motion count from today
                     string path = System.IO.Path.Combine(Settings.StoragePath, DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
                     System.IO.Directory.CreateDirectory(path);
@@ -703,7 +703,7 @@ namespace MotionUVC
             if ( Settings.RebootDaily ) {
                 // timer tick is 30s, so within a range of 60s this condition will be met once for sure
                 if ( DateTime.Now.TimeOfDay >= MainForm.BootTimeBeg && DateTime.Now.TimeOfDay <= MainForm.BootTimeEnd ) {
-                    Logger.logTextLn(DateTime.Now, "Now: daily reboot system");
+                    Logger.logTextLnU(DateTime.Now, "Now: daily reboot system");
                     // INI: write to ini
                     updateSettingsFromAppProperties();
                     Settings.writePropertyGridToIni();
@@ -721,12 +721,12 @@ namespace MotionUVC
             // folder and video file name
             DateTime now = DateTime.Now;
             if ( _alarmSequence && _Bot != null && _sequenceReceiver != null ) {
-                Logger.logTextLn(DateTime.Now, "makeMotionSequence: 'on demand' start");
+                Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'on demand' start");
             } else {
                 if ( Settings.MakeVideoNow ) {
-                    Logger.logTextLn(DateTime.Now, "makeMotionSequence: 'now sequence' start");
+                    Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'now sequence' start");
                 } else {
-                    Logger.logTextLn(DateTime.Now, "makeMotionSequence: 'daily sequence' start");
+                    Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'daily sequence' start");
                 }
             }
             string nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
@@ -766,7 +766,7 @@ namespace MotionUVC
                         Text = "Make video sequence failed."
                     });
                 }
-                Logger.logTextLn(DateTime.Now, String.Format("makeMotionSequence ex: {0}", ex1.Message));
+                Logger.logTextLnU(DateTime.Now, String.Format("makeMotionSequence ex: {0}", ex1.Message));
                 if ( writer != null ) {
                     writer.Close();
                 }
@@ -776,12 +776,12 @@ namespace MotionUVC
             // send motion alarm sequence
             if ( _alarmSequence && _Bot != null && _sequenceReceiver != null ) {
                 sendVideo(_sequenceReceiver, fileName);
-                Logger.logTextLn(DateTime.Now, "makeMotionSequence: 'on demand' done");
+                Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'on demand' done");
             } else {
                 if ( Settings.MakeVideoNow ) {
-                    Logger.logTextLn(DateTime.Now, "makeMotionSequence: 'now sequence' done");
+                    Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'now sequence' done");
                 } else {
-                    Logger.logTextLn(DateTime.Now, "makeMotionSequence: 'daily sequence' done");
+                    Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'daily sequence' done");
                 }
             }
             // the busy flag was set in the calling method
@@ -790,7 +790,7 @@ namespace MotionUVC
         // make video from today's images  
         public void makeMotionVideo(Size size, MessageSender sender = null) {
             _dailyVideoInProgress = true;
-            Logger.logTextLn(DateTime.Now, "makeMotionVideo: 'make video' start");
+            Logger.logTextLnU(DateTime.Now, "makeMotionVideo: 'make video' start");
             // folder and video file name
             string nowString = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             string path = System.IO.Path.Combine(Settings.StoragePath, nowString);
@@ -829,7 +829,7 @@ namespace MotionUVC
                 }
                 // if image files are locked
                 if ( fileError == fileCount ) {
-                    Logger.logTextLn(DateTime.Now, "makeMotionVideo: too many file errors");
+                    Logger.logTextLnU(DateTime.Now, "makeMotionVideo: too many file errors");
                     if ( !Settings.MakeVideoNow ) {
                         Settings.DailyVideoDone = false;
                     }
@@ -856,7 +856,7 @@ namespace MotionUVC
                         _motionsList.Clear();
                     }
                 }
-                Logger.logTextLn(DateTime.Now, String.Format("makeMotionVideo ex at step{0}: {1}", excStep, ex.Message));
+                Logger.logTextLnU(DateTime.Now, String.Format("makeMotionVideo ex at step{0}: {1}", excStep, ex.Message));
                 if ( !Settings.MakeVideoNow ) {
                     Settings.DailyVideoDone = false;
                 }
@@ -892,7 +892,7 @@ namespace MotionUVC
             Settings.MakeVideoNow = false;
             _dailyVideoErrorCount = 0;
             _dailyVideoInProgress = false;
-            Logger.logTextLn(DateTime.Now, "makeMotionVideo: 'make video' done");
+            Logger.logTextLnU(DateTime.Now, "makeMotionVideo: 'make video' done");
         }
         // prepare to send a video
         void prepareToSendVideo(MessageSender sender) {
@@ -917,7 +917,7 @@ namespace MotionUVC
                     // if no video exists, make one
                     Task.Run(() => { makeMotionVideo(Settings.CameraResolution, sender); });
                 } catch ( Exception e ) {
-                    Logger.logTextLn(DateTime.Now, "prepareToSendVideo: " + e.Message);
+                    Logger.logTextLnU(DateTime.Now, "prepareToSendVideo: " + e.Message);
                     _sendVideo = false;
                 }
             } else {
@@ -931,7 +931,7 @@ namespace MotionUVC
                 _Bot.SetCurrentAction(sender, ChatAction.UploadVideo);
                 byte[] buffer = System.IO.File.ReadAllBytes(fileName);
                 _Bot.SendVideo(sender, buffer, "snapshot", "video");
-                Logger.logTextLn(DateTime.Now, "video sent");
+                Logger.logTextLnU(DateTime.Now, "video sent");
                 _sendVideo = false;
             }
         }
@@ -954,11 +954,11 @@ namespace MotionUVC
                     Settings.PingOk = true;
                     // notify about previous fails
                     if ( pingFailCounter > 10 ) {
-                        Logger.logTextLn(DateTime.Now, String.Format("ping is ok - after {0} fails", pingFailCounter));
+                        Logger.logTextLnU(DateTime.Now, String.Format("ping is ok - after {0} fails", pingFailCounter));
                     }
                     pingFailCounter = 0;
                     if ( stopLogCounter > 0 ) {
-                        Logger.logTextLn(DateTime.Now, "ping is ok - after a long time failing");
+                        Logger.logTextLnU(DateTime.Now, "ping is ok - after a long time failing");
                     }
                     stopLogCounter = 0;
                 } else {
@@ -974,14 +974,14 @@ namespace MotionUVC
                         Logger.logTextLn(DateTime.Now, "network is up, but 10x ping failed");
                         if ( Settings.RebootPingCounter < 3 ) {
                             if ( Settings.RebootPingAllowed ) {
-                                Logger.logTextLn(DateTime.Now, "network is up, but ping fails --> next reboot System");
+                                Logger.logTextLnU(DateTime.Now, "network is up, but ping fails --> next reboot System");
                                 Settings.RebootPingCounter++;
                                 AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
                                 ini.IniWriteValue("MotionUVC", "RebootPingCounter", Settings.RebootPingCounter.ToString());
                                 ini.IniWriteValue("MotionUVC", "RebootPingFlagActive", "True");
                                 System.Diagnostics.Process.Start("shutdown", "/r /f /y /t 1");    // REBOOT: /f == force if /t > 0; /y == yes to all questions asked 
                             } else {
-                                Logger.logTextLn(DateTime.Now, "network is up, but ping fails --> BUT reboot System is not allowed");
+                                Logger.logTextLnU(DateTime.Now, "network is up, but ping fails --> BUT reboot System is not allowed");
                             }
                         } else {
                             if ( stopLogCounter < 5 ) {
@@ -992,14 +992,14 @@ namespace MotionUVC
                     } else {
                         if ( Settings.RebootPingCounter < 3 ) {
                             if ( Settings.RebootPingAllowed ) {
-                                Logger.logTextLn(DateTime.Now, "network is down --> next reboot System");
+                                Logger.logTextLnU(DateTime.Now, "network is down --> next reboot System");
                                 Settings.RebootPingCounter++;
                                 AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
                                 ini.IniWriteValue("MotionUVC", "RebootPingCounter", Settings.RebootPingCounter.ToString());
                                 ini.IniWriteValue("MotionUVC", "RebootPingFlagActive", "True");
                                 System.Diagnostics.Process.Start("shutdown", "/r /f /y /t 1");    // REBOOT: /f == force if /t > 0; /y == yes to all questions asked 
                             } else {
-                                Logger.logTextLn(DateTime.Now, "network is down --> BUT reboot System is not allowed");
+                                Logger.logTextLnU(DateTime.Now, "network is down --> BUT reboot System is not allowed");
                             }
                         } else {
                             if ( stopLogCounter < 5 ) {
@@ -1021,7 +1021,7 @@ namespace MotionUVC
                 if ( (span).TotalSeconds > 120 ) {
                     if ( _telegramLiveTickErrorCount > 10 ) {
                         // give up after more than 10 live tick errors and log app restart
-                        Logger.logTextLn(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active for #{0} cycles, now restarting MotionUVC", _telegramLiveTickErrorCount));
+                        Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active for #{0} cycles, now restarting MotionUVC", _telegramLiveTickErrorCount));
                         // restart MotionUVC
                         string exeName = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
                         ProcessStartInfo startInfo = new ProcessStartInfo(exeName);
@@ -1032,7 +1032,7 @@ namespace MotionUVC
                     } else {
                         // try to restart Telegram, it's not fully reliable - therefore a counter is introduced
                         _telegramLiveTickErrorCount++;
-                        Logger.logTextLn(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active detected, now shut it down #{0}", _telegramLiveTickErrorCount));
+                        Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active detected, now shut it down #{0}", _telegramLiveTickErrorCount));
                         _Bot.OnMessage -= OnMessage;
                         _Bot.OnError -= OnError;
                         _Bot.OnLiveTick -= OnLiveTick;
@@ -1047,30 +1047,30 @@ namespace MotionUVC
             _connectionLiveTick = now;
             if ( _telegramLiveTickErrorCount > 0 ) {
                 // tlegram restart after a live tick fail was successful
-                Logger.logTextLn(DateTime.Now, String.Format("OnLiveTick: Telegram now active after previous fail #{0}", _telegramLiveTickErrorCount));
+                Logger.logTextLnU(DateTime.Now, String.Format("OnLiveTick: Telegram now active after previous fail #{0}", _telegramLiveTickErrorCount));
                 _telegramLiveTickErrorCount = 0;
             }
         }
         // Telegram connector detected a connection issue
         private void OnError(bool connectionError) {
             _telegramOnErrorCount++;
-            Logger.logTextLn(DateTime.Now, String.Format("OnError: Telegram connect error {0} {1}", _telegramOnErrorCount, connectionError));
+            Logger.logTextLnU(DateTime.Now, String.Format("OnError: Telegram connect error {0} {1}", _telegramOnErrorCount, connectionError));
             if ( _Bot != null ) {
                 _Bot.OnMessage -= OnMessage;
                 _Bot.OnError -= OnError;
                 _Bot.OnLiveTick -= OnLiveTick;
                 _Bot.Stop();
                 _Bot = null;
-                Logger.logTextLn(DateTime.Now, "OnError: Telegram connect error, now shut down");
+                Logger.logTextLnU(DateTime.Now, "OnError: Telegram connect error, now shut down");
             } else {
-                Logger.logTextLn(DateTime.Now, "OnError: _Bot == null, but OnError still active");
+                Logger.logTextLnU(DateTime.Now, "OnError: _Bot == null, but OnError still active");
             }
         }
         // read received Telegram messages to the local bot
         private void OnMessage(TeleSharp.Entities.Message message) {
-            // Get mesage sender information
+            // get message sender information
             MessageSender sender = (MessageSender)message.Chat ?? message.From;
-            Logger.logTextLn(DateTime.Now, "'" + message.Text + "'");
+            Logger.logTextLnU(DateTime.Now, "'" + message.Text + "'");
             string baseStoragePath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
             if ( string.IsNullOrEmpty(message.Text) || string.IsNullOrEmpty(baseStoragePath) ) {
                 return;
@@ -1165,7 +1165,7 @@ namespace MotionUVC
                             }
                         case "/image": {
                                 if ( _currFrame == null ) {
-                                    Logger.logTextLn(DateTime.Now, "image capture not working");
+                                    Logger.logTextLnU(DateTime.Now, "image capture not working");
                                     _Bot.SendMessage(new SendMessageParams {
                                         ChatId = sender.Id.ToString(),
                                         Text = "image capture not working",
@@ -1175,7 +1175,7 @@ namespace MotionUVC
                                 _Bot.SetCurrentAction(sender, ChatAction.UploadPhoto);
                                 byte[] buffer = bitmapToByteArray(_currFrame);
                                 _Bot.SendPhoto(sender, buffer, "snapshot", "image");
-                                Logger.logTextLn(DateTime.Now, String.Format("image sent to: {0}", sender.Id.ToString()));
+                                Logger.logTextLnU(DateTime.Now, String.Format("image sent to: {0}", sender.Id.ToString()));
                                 break;
                             }
                         default: {
@@ -1183,12 +1183,12 @@ namespace MotionUVC
                                     ChatId = sender.Id.ToString(),
                                     Text = message.Text,
                                 });
-                                Logger.logTextLn(DateTime.Now, String.Format("unknown command '{0}' from {1}", message.Text, sender.Id.ToString()));
+                                Logger.logTextLnU(DateTime.Now, String.Format("unknown command '{0}' from {1}", message.Text, sender.Id.ToString()));
                                 break;
                             }
                     }
             } catch ( Exception ex ) {
-                Logger.logTextLn(DateTime.Now, "EXCEPTION OnMessage: " + ex.Message);
+                Logger.logTextLnU(DateTime.Now, "EXCEPTION OnMessage: " + ex.Message);
             }
         }
 
@@ -1235,7 +1235,7 @@ namespace MotionUVC
 
         // closing the main form
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e) {
-            Logger.logTextLn(DateTime.Now, "MotionUVC closed by user.");
+            Logger.logTextLnU(DateTime.Now, "MotionUVC closed by user.");
 
             // IMessageFilter
             Application.RemoveMessageFilter(this);
@@ -1427,7 +1427,7 @@ namespace MotionUVC
                 SnapshotForm snapshotForm = new SnapshotForm(snapshotFull, snapshotCtl);
                 snapshotForm.Show();
             } catch {
-                Logger.logTextLn(DateTime.Now, "snapshotButton_Click: exception");
+                Logger.logTextLnU(DateTime.Now, "snapshotButton_Click: exception");
             }
         }
 
@@ -1438,7 +1438,7 @@ namespace MotionUVC
                     // providing a handle makes the dialog modal, aka UI blocking
                     _videoDevice.DisplayPropertyPage(this.Handle);
                 } catch {
-                    Logger.logTextLn(DateTime.Now, "buttonProperties_Click: Cannot connect to camera properties");
+                    Logger.logTextLnU(DateTime.Now, "buttonProperties_Click: Cannot connect to camera properties");
                 }
                 // since the above dialog is modal, the only way to get here, is after the camera property dialog was closed
                 updateUiCameraProperties();
@@ -1475,7 +1475,7 @@ namespace MotionUVC
                 return;
             }
             if ( setCameraExposureAuto() != CameraControlFlags.Auto ) {
-                Logger.logTextLn(DateTime.Now, "buttonAutoExposure_Click: Cannot set camera exposure time to automatic.");
+                Logger.logTextLnU(DateTime.Now, "buttonAutoExposure_Click: Cannot set camera exposure time to automatic.");
             }
             updateUiCameraProperties();
         }
@@ -1837,7 +1837,7 @@ namespace MotionUVC
                     headLine();
 
                 } catch ( Exception ex ) {
-                    Logger.logTextLn(now, String.Format("cameraImageGrabber: excStep={0} {1}", excStep, ex.Message));
+                    Logger.logTextLnU(now, String.Format("cameraImageGrabber: excStep={0} {1}", excStep, ex.Message));
                 } finally {
                     // sleep for '500ms - process time' to ensure 2fps
                     System.Threading.Thread.Sleep(Math.Max(0, 500 - (int)_procMs));
@@ -2168,6 +2168,7 @@ namespace MotionUVC
                             Logger.logTextLn(DateTime.Now, "alarm photo sent");
                         } catch ( Exception ex ) {
                             string msg = ex.Message;
+                            Logger.logTextLnU(DateTime.Now, msg);
                         }
                     });
                 }

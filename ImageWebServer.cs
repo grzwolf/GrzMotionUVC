@@ -80,7 +80,7 @@ namespace MotionUVC {
                     _tcpListener.Start();
                     Logger.logTextLn(DateTime.Now, "execWebServer started");
                 } catch ( Exception ex ) {
-                    Logger.logTextLn(DateTime.Now, "execWebServer ex: " + ex.Message);
+                    Logger.logTextLnU(DateTime.Now, "execWebServer ex: " + ex.Message);
                     return;
                 }
                 // loop the tcpListener for incoming clients
@@ -103,7 +103,7 @@ namespace MotionUVC {
                     }
                 }
             } catch ( SocketException e ) {
-                Logger.logTextLn(DateTime.Now, "execWebServer e: " + e.Message);
+                Logger.logTextLnU(DateTime.Now, "execWebServer e: " + e.Message);
             }
             // clean up
             if ( _tcpListener != null ) {
@@ -148,7 +148,7 @@ namespace MotionUVC {
                     inputLines = null;
                 } catch ( Exception ex ) {
                     // only way to get here is, if client disconnects (X in browser, close browser) -> IOException is thrown
-                    Logger.logTextLn(DateTime.Now, String.Format("handleTcpClient ex: client #{0} was closed", client.Client.Handle));
+                    Logger.logTextLnU(DateTime.Now, String.Format("handleTcpClient ex: client #{0} was closed", client.Client.Handle));
                     // leave this inner client loop with 'inputLines = null' and quit
                     inputLines = null;
                 }
@@ -218,7 +218,7 @@ namespace MotionUVC {
                     bufTxt = System.Text.ASCIIEncoding.ASCII.GetBytes(message);
                     stream.Write(bufTxt, 0, bufTxt.Length);
                 } catch ( InvalidOperationException ioe ) {
-                    Logger.logTextLn(DateTime.Now, String.Format("sendImagesToWebClient #{1} ioe: {0}", ioe.Message, client.Client.Handle));
+                    Logger.logTextLnU(DateTime.Now, String.Format("sendImagesToWebClient #{1} ioe: {0}", ioe.Message, client.Client.Handle));
                 }
 
                 Thread.Sleep(500);
