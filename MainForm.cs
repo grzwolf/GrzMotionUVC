@@ -56,17 +56,36 @@ namespace MotionUVC
         double _frameAspectRatio = 1.3333f;                                  // default value until it is overridden via 'firstImageProcessing' in grabber 
 
         public class Motion {                                                // helper to have a motion list other than the stored files on disk
-            public String fileName;
-            public DateTime fileDate;
-            public bool consecutive { get; set; }
-            public Motion(String fileName, DateTime fileDate) {
-                this.fileName = fileName;
-                this.fileDate = fileDate;
-                this.consecutive = false;
+            public String fileNameMotion;
+            public String fileNameProc;
+            public DateTime motionDateTime;
+            public Bitmap imageMotion;
+            public Bitmap imageProc;
+            public bool motionSaved;
+            public bool motionConsecutive { get; set; }
+            public Motion(String fileNameMotion, DateTime motionDateTime) {
+                this.fileNameMotion = fileNameMotion;
+                this.fileNameProc = "";
+                this.motionDateTime = motionDateTime;
+                this.motionConsecutive = false;
+                this.imageMotion = null;
+                this.imageProc = null;
+                this.motionSaved = true;
+            }
+            public Motion(String fileNameMotion, DateTime motionDateTime, Bitmap image, String fileNameProc, Bitmap imageProc) {
+                this.fileNameMotion = fileNameMotion;
+                this.fileNameProc = fileNameProc;
+                this.motionDateTime = motionDateTime;
+                this.motionConsecutive = false;
+                this.imageMotion = (Bitmap)image.Clone();
+                this.imageProc = imageProc != null ? (Bitmap)imageProc.Clone() : null;
+                this.motionSaved = false;
             }
         }
         List<Motion> _motionsList = new List<Motion>();                      // list of Motion, which are motion sequences if 'consecutive' is true
-        int _motionsDetected = 0;                                            // motion detection counter
+
+        int _motionsDetected = 0;                                            // all motion detection counter
+        int _consecutivesDetected = -1;                                      // consecutive motions counter
         bool _justConnected = false;                                         // just connected 
         double _fps = 0;                                                     // current frame rate 
         long _procMs = 0;                                                    // current process time
@@ -364,34 +383,6 @@ namespace MotionUVC
             // check for UVC devices
             getCameraBasics();
             EnableConnectionControls(true);
-            // at app start fill _motionList regardless if it is used or not
-            Task.Run(() => { loadTodaysMotionList(); });
-        }
-
-        // fill _motionList with today's motion image data from disk
-        private void loadTodaysMotionList() {
-            DateTime now = DateTime.Now;
-            string nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            if ( DateTime.Now.TimeOfDay >= new System.TimeSpan(19, 0, 0) ) {
-                now = now.AddDays(1);
-                nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            }
-            string path = System.IO.Path.Combine(Settings.StoragePath, nowString);
-            System.IO.Directory.CreateDirectory(path);
-            DirectoryInfo d = new DirectoryInfo(path);
-            FileInfo[] Files = d.GetFiles("*.jpg");
-            _motionsList.Clear();
-            foreach ( FileInfo file in Files ) {
-                _motionsList.Add(new Motion(file.FullName, file.CreationTime));
-                if ( _motionsList.Count > 2 ) {
-                    // if current motion is closer than 2.5s to the previous two list entries, make all three consecutive
-                    if ( (_motionsList[_motionsList.Count - 1].fileDate.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].fileDate.TimeOfDay.TotalSeconds) < 2.5f ) {
-                        _motionsList[_motionsList.Count - 3].consecutive = true;
-                        _motionsList[_motionsList.Count - 2].consecutive = true;
-                        _motionsList[_motionsList.Count - 1].consecutive = true;
-                    }
-                }
-            }
         }
 
         // update app from settings
@@ -491,7 +482,7 @@ namespace MotionUVC
         // a general timer 1x / 30s for app flow control
         private void timerFlowControl_Tick(object sender, EventArgs e) {
 
-            // check once per 30s, whether to search & send an alarm video sequence
+            // check once per 30s, whether to search & send an alarm video sequence; ideally it's just the rest after an already sent sequence of 6 motions started from detectMotion(..)
             if ( _alarmSequence && !_alarmSequenceBusy ) {
                 // busy flag to prevent overrun
                 _alarmSequenceBusy = true;
@@ -501,7 +492,7 @@ namespace MotionUVC
                     return;
                 }
                 // don't continue, if latest stored motion is older than 35s
-                if ( (DateTime.Now.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 1].fileDate.TimeOfDay.TotalSeconds) > 35 ) {
+                if ( (DateTime.Now.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds) > 35 ) {
                     _alarmSequenceBusy = false;
                     return;
                 }
@@ -510,7 +501,7 @@ namespace MotionUVC
                 // pick the most recent motion
                 try {
                     for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
-                        if ( _motionsList[i].consecutive ) {
+                        if ( _motionsList[i].motionConsecutive ) {
                             mo = _motionsList[i];
                             break;
                         }
@@ -521,7 +512,7 @@ namespace MotionUVC
                     return;
                 }
                 // don't continue, if latest consecutive motion is older than 35s
-                if ( (DateTime.Now.TimeOfDay.TotalSeconds - mo.fileDate.TimeOfDay.TotalSeconds) > 35 ) {
+                if ( (DateTime.Now.TimeOfDay.TotalSeconds - mo.motionDateTime.TimeOfDay.TotalSeconds) > 35 ) {
                     _alarmSequenceBusy = false;
                     return;
                 }
@@ -534,7 +525,7 @@ namespace MotionUVC
                 // only pick the latest consecutive motion index
                 int startNdx = -1;  
                 for ( int i = currList.Count - 1; i >= 0; i-- ) {
-                    if ( currList[i].consecutive ) {
+                    if ( currList[i].motionConsecutive ) {
                         startNdx = i;
                         break;
                     }
@@ -547,7 +538,7 @@ namespace MotionUVC
                 // make a sub list containing the latest consecutive motions
                 List<Motion> subList = new List<Motion>();
                 for ( int i = startNdx; i>=0; i-- ) {
-                    if ( currList[i].consecutive ) {
+                    if ( currList[i].motionConsecutive ) {
                         subList.Insert(0, currList[i]);
                     } else {
                         break;
@@ -574,7 +565,7 @@ namespace MotionUVC
                 try {
                     // get number of consecutive motions
                     for ( int i = 0; i < _motionsList.Count; i++ ) {
-                        if ( _motionsList[i].consecutive ) {
+                        if ( _motionsList[i].motionConsecutive ) {
                             consecutiveCount++;
                         }
                     }
@@ -615,6 +606,28 @@ namespace MotionUVC
 
             // one check every 15 minutes
             if ( DateTime.Now.Minute % 15 == 0 && DateTime.Now.Second < 31 ) {
+
+                // clean up _motionList from 'non consecutive' images
+                _consecutivesDetected = 0;
+                for ( int i=0; i < _motionsList.Count - 1; i++ ) {
+                    // ignore all entries younger than 60s: TBD ?? what if a sequence is longer than 60s ??
+                    if ( (DateTime.Now.TimeOfDay.TotalSeconds - _motionsList[i].motionDateTime.TimeOfDay.TotalSeconds) > 60 ) {
+                        // release hires images
+                        if ( _motionsList[i].imageMotion != null ) {
+                            _motionsList[i].imageMotion.Dispose();
+                            _motionsList[i].imageMotion = null;
+                        }
+                        // release lores images
+                        if ( _motionsList[i].imageProc != null ) {
+                            _motionsList[i].imageProc.Dispose();
+                            _motionsList[i].imageProc = null;
+                        }
+                    }
+                    // count all consecutive motions
+                    if ( _motionsList[i].motionConsecutive ) {
+                        _consecutivesDetected++;
+                    }
+                }
 
                 // try to restart Telegram, if it should run but it doesn't due to an internal fail
                 if ( Settings.UseTelegramBot && _Bot == null ) {
@@ -674,8 +687,23 @@ namespace MotionUVC
             if ( Settings.MakeDailyVideo ) {
                 // make video from today's images at 19:00:00: if not done yet AND if today's error count < 5 AND not in progress
                 if ( DateTime.Now.TimeOfDay >= _videoTime && !Settings.DailyVideoDone && (_dailyVideoErrorCount < 5) && !_dailyVideoInProgress ) {
-                    // generate daily video from single motion images
+                    // generate daily video: a) from single motion images b) from motion sequences afterwards
                     Task.Run(() => { makeMotionVideo(Settings.CameraResolution); });
+                    // clear _motionsList for current day
+                    for ( int i = 0; i < _motionsList.Count - 1; i++ ) {
+                        // dispose hires if existing
+                        if ( _motionsList[i].imageMotion != null ) {
+                            _motionsList[i].imageMotion.Dispose();
+                            _motionsList[i].imageMotion = null;
+                        }
+                        // dispose lores if existing
+                        if ( _motionsList[i].imageProc != null ) {
+                            _motionsList[i].imageProc.Dispose();
+                            _motionsList[i].imageProc = null;
+                        }
+                    }
+                    _motionsList.Clear();
+                    // done   
                     return;
                 }
                 // prevent 'make video' loops in case of errors
@@ -720,15 +748,7 @@ namespace MotionUVC
         public void makeMotionSequence(List<Motion> mol, Size size) {
             // folder and video file name
             DateTime now = DateTime.Now;
-            if ( _alarmSequence && _Bot != null && _sequenceReceiver != null ) {
-                Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'on demand' start");
-            } else {
-                if ( Settings.MakeVideoNow ) {
-                    Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'now sequence' start");
-                } else {
-                    Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'daily sequence' start");
-                }
-            }
+            Logger.logTextLnU(DateTime.Now, "makeMotionSequence: 'on demand' start");
             string nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             string path = System.IO.Path.Combine(Settings.StoragePath, nowString + "_sequ");
             System.IO.Directory.CreateDirectory(path);
@@ -747,9 +767,15 @@ namespace MotionUVC
                 Bitmap image;
                 // loop list 
                 foreach ( Motion mo in mol ) {
-                    if ( mo.consecutive ) {
+                    if ( mo.motionConsecutive ) {
                         try {
-                            image = new Bitmap(mo.fileName);
+                            if ( mo.motionSaved ) {
+                                // if motion is already saved, get bmp from disk
+                                image = new Bitmap(mo.fileNameMotion);
+                            } else {
+                                // if motion is not yet saved, get image bmp from list
+                                image = (Bitmap)mo.imageMotion.Clone();
+                            }
                             writer.WriteVideoFrame(image);
                             image.Dispose();
                         } catch {
@@ -848,13 +874,6 @@ namespace MotionUVC
                         ChatId = sender.Id.ToString(),
                         Text = "Make video failed, try again later."
                     });
-                } else {
-                    // if !_Bot: despite of the make video error, generate daily video from motion sequences
-                    if ( Settings.MakeVideoNow && Settings.SaveSequences ) {
-                        List<Motion> currList = new List<Motion>(_motionsList);
-                        Task.Run(() => { makeMotionSequence(currList, Settings.CameraResolution); });
-                        _motionsList.Clear();
-                    }
                 }
                 Logger.logTextLnU(DateTime.Now, String.Format("makeMotionVideo ex at step{0}: {1}", excStep, ex.Message));
                 if ( !Settings.MakeVideoNow ) {
@@ -876,12 +895,6 @@ namespace MotionUVC
                     Settings.DailyVideoDone = true;
                     IniFile ini = new IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
                     ini.IniWriteValue("MotionUVC", "DailyVideoDoneForToday", "True");
-                }
-                // generate daily video from motion sequences after makeMotionVideo(..) is finished to avoid locked files from disk
-                if ( Settings.SaveSequences ) {
-                    List<Motion> currList = new List<Motion>(_motionsList);
-                    Task.Run(() => { makeMotionSequence(currList, Settings.CameraResolution); });
-                    _motionsList.Clear();
                 }
             } else {
                 // send on demand video
@@ -1769,9 +1782,10 @@ namespace MotionUVC
                         }
                         graphics.FillRectangle(Brushes.Yellow, 0, 0, timestampLength, timestampHeight);
                         graphics.DrawString(text, timestampFont, Brushes.Black, 5, 5);
-                        int xPos = _origFrame.Width - oneCharStampLength * _motionsDetected.ToString().Length - 5;
+                        text = _motionsDetected.ToString() + "/" + _consecutivesDetected.ToString();
+                        int xPos = _origFrame.Width - oneCharStampLength * text.Length - 5;
                         graphics.FillRectangle(Brushes.Yellow, xPos, yFill, _origFrame.Width, _origFrame.Height);
-                        graphics.DrawString(_motionsDetected.ToString(), timestampFont, Brushes.Black, xPos, yDraw);
+                        graphics.DrawString(text, timestampFont, Brushes.Black, xPos, yDraw);
                     }
 
                     // motion detector works with a scaled image, typically 800 x 600
@@ -2075,96 +2089,158 @@ namespace MotionUVC
                 ImageWebServer.Image = (Settings.WebserverImage == AppSettings.WebserverImageType.PROCESS) ? (Bitmap)_procFrame.Clone() : (Bitmap)_currFrame.Clone();
             }
 
-            // false positive handling
-            if ( falsePositive ) {
-                motionDetected = false;
-            }
-
-            // image save needs a useful name
-            DateTime now = DateTime.Now;
-            string nowString = now.ToString("yyyy-MM-dd-HH-mm-ss_fff", CultureInfo.InvariantCulture);
+            // save motions needs useful names
+            DateTime nowFile = DateTime.Now;
+            DateTime nowPath = DateTime.Now;
+            string nowStringFile = nowFile.ToString("yyyy-MM-dd-HH-mm-ss_fff", CultureInfo.InvariantCulture);
+            string nowStringPath = nowPath.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
             // if video will be generated, images captured between 19:00 ... 24:00 will be saved into the next day's folder
             if ( Settings.MakeDailyVideo ) {
                 if ( DateTime.Now.TimeOfDay >= new System.TimeSpan(19, 0, 0) ) {
-                    now = now.AddDays(1);
-                    nowString = now.ToString("yyyy-MM-dd-HH-mm-ss_fff", CultureInfo.InvariantCulture);
+                    // jump one day forward
+                    nowPath = nowPath.AddDays(1);
+                    nowStringPath = nowPath.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 }
             }
 
-            // save lores but fully processed file for debug purposes OR false positives, both at the same time is not possible
-            if ( (Settings.DebugProcessImages && motionDetected) || (Settings.DebugFalsePositiveImages && falsePositive) ) {
-                Task.Run(() => {
-                    try {
-                        // filename based on current time stamp
-                        string path = System.IO.Path.Combine(Settings.StoragePath, nowString.Substring(0, 10) + (falsePositive ? "_false" : "_proc"));
-                        string fileName = System.IO.Path.Combine(path, nowString + ".jpg");
-                        // storage directory
-                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fileName));
-                        // save image
-                        Bitmap tmp = (Bitmap)_procFrame.Clone();
-                        tmp.Save(fileName, System.Drawing.Imaging.ImageFormat.Jpeg);
-                        tmp.Dispose();
-                    } catch ( Exception ex ) {
-                        string msg = ex.Message;
-                    }
-                });
+            // false positive handling
+            if ( falsePositive ) {
+                // false positive images are no motion images
+                motionDetected = false;
+                // save lores fully processed false positive file for debug purposes
+                if ( Settings.DebugFalsePositiveImages ) {
+                    Task.Run(() => {
+                        try {
+                            // filename based on current time stamp
+                            string path = System.IO.Path.Combine(Settings.StoragePath, nowStringPath + "_false");
+                            string fileName = System.IO.Path.Combine(path, nowStringFile + ".jpg");
+                            // storage directory
+                            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fileName));
+                            // save the 'false positive image'
+                            Bitmap tmp = (Bitmap)_procFrame.Clone();
+                            tmp.Save(fileName, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            tmp.Dispose();
+                        } catch ( Exception ex ) {
+                            string msg = ex.Message;
+                        }
+                    });
+                }
             }
 
             // a motion was detected
             if ( motionDetected ) {
 
-                // save hires image
-                if ( Settings.SaveMotion ) {
+                // save hires & lores images
+                if ( Settings.SaveMotion || Settings.SaveSequences || _alarmSequence ) {
                     try {
-                        Task.Run(() => {
-                            // save single file
-                            string path = System.IO.Path.Combine(Settings.StoragePath, nowString.Substring(0, 10));
-                            System.IO.Directory.CreateDirectory(path);
-                            string fileName;
-                            if ( Settings.MotionFilename == AppSettings.MotionFilenameConvention.IMAGECOUNT ) {
-                                int fileCount = Directory.GetFiles(path, "*.jpg", SearchOption.TopDirectoryOnly).Length;
-                                fileName = System.IO.Path.Combine(path, "img" + fileCount.ToString("D6") + ".jpg");
-                            } else {
-                                fileName = System.IO.Path.Combine(path, nowString + ".jpg");
+                        // storage directory is built from nowStringPath, which already takes care about image save >19:00 into the next day folder
+                        string filePath = System.IO.Path.Combine(Settings.StoragePath, nowStringPath);
+                        System.IO.Directory.CreateDirectory(filePath);
+                        // build filename from nowStringPath + simple time stamp
+                        string fileName = System.IO.Path.Combine(filePath, nowStringFile + ".jpg");
+                        // in case of debug lores, filename is based on current time stamp, yet no need to create path
+                        string pathDbg = System.IO.Path.Combine(Settings.StoragePath, nowStringPath + "_proc");
+                        string fileNameDbg = System.IO.Path.Combine(pathDbg, nowStringFile + ".jpg");
+
+                        // only save current motion directly, if requested so
+                        bool motionSaved = false;
+                        if ( Settings.SaveMotion ) {
+                            // save hires
+                            Task.Run(() => {
+                                _origFrame.Save(fileName, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            });
+                            // save lores fully processed file for debug purposes
+                            if ( Settings.DebugProcessImages ) {
+                                Task.Run(() => {
+                                    try {
+                                        // storage directory
+                                        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fileNameDbg));
+                                        // save lores image
+                                        Bitmap tmp = (Bitmap)_procFrame.Clone();
+                                        tmp.Save(fileNameDbg, System.Drawing.Imaging.ImageFormat.Jpeg);
+                                        tmp.Dispose();
+                                    } catch ( Exception ex ) {
+                                        string msg = ex.Message;
+                                    }
+                                });
                             }
-                            _origFrame.Save(fileName, System.Drawing.Imaging.ImageFormat.Jpeg);
-                            // consider whether to prepare for making motion sequences
-                            if ( Settings.SaveSequences || _alarmSequence ) {
-                                // collect motion in motion list
-                                _motionsList.Add(new Motion(fileName, now));
-                                if ( _motionsList.Count > 2 ) {
-                                    // if current motion is closer than 2.5s to the previous two list entries, make all three consecutive
-                                    if ( (_motionsList[_motionsList.Count - 1].fileDate.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].fileDate.TimeOfDay.TotalSeconds) < 2.5f ) {
-                                        _motionsList[_motionsList.Count - 3].consecutive = true;
-                                        _motionsList[_motionsList.Count - 2].consecutive = true;
-                                        _motionsList[_motionsList.Count - 1].consecutive = true;
+                            // set flag
+                            motionSaved = true;
+                        }
+                        
+                        // consider motion sequence
+                        if ( Settings.SaveSequences || _alarmSequence ) {
+                            // save 'motion sequence file' either to list or add an info entry depending on 'motion save status'
+                            if ( !motionSaved ) {
+                                _motionsList.Add(new Motion(fileName, nowFile, (Bitmap)_origFrame.Clone(), fileNameDbg, Settings.DebugProcessImages ? (Bitmap)_procFrame.Clone() : null));
+                            } else {
+                                _motionsList.Add(new Motion(fileName, nowFile));
+                            }
+
+                            // need to wait for at least 3 queued images to allow some time comparison between the list entries
+                            if ( _motionsList.Count > 2 ) {
+                                // check if the current motion is closer than 2.5s to the previous two list entries == a 'sequence' did happen
+                                if ( (_motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].motionDateTime.TimeOfDay.TotalSeconds) < 2.5f ) {
+
+                                    // make the last three motions consecutive
+                                    _motionsList[_motionsList.Count - 3].motionConsecutive = true;
+                                    _motionsList[_motionsList.Count - 2].motionConsecutive = true;
+                                    _motionsList[_motionsList.Count - 1].motionConsecutive = true;
+
+                                    // consecutive motions counter
+                                    if ( _consecutivesDetected == -1 ) {
+                                        _consecutivesDetected = 3;
+                                    } else {
+                                        _consecutivesDetected++;
+                                    }
+
+                                    // save a consecutive image to disk (only @ 1st enter it's sequence of three images)
+                                    saveSequence();
+
+                                    // make a motion sequence video only in this specific case
+                                    if ( _alarmSequence ) {
+                                        // fire & forget is ok
+                                        Task.Run(() => {
+                                            // make a sub list containing the latest consecutive motions
+                                            _alarmSequenceBusy = true;
+                                            List<Motion> subList = new List<Motion>();
+                                            for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
+                                                if ( _motionsList[i].motionConsecutive ) {
+                                                    subList.Insert(0, _motionsList[i]);
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+                                            // don't continue, if subList is too small = have at least a 3s motion sequence (6 motions); less motions will be picked up by timer flow control with some delay
+                                            if ( subList.Count < 7 ) {
+                                                _alarmSequenceBusy = false;
+                                                return;
+                                            }
+                                            // prevent to send the current motion sequence again, by placing two stoppers into motion list
+                                            _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
+                                            _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
+                                            // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy when done
+                                            makeMotionSequence(subList, Settings.CameraResolution);
+                                        });
                                     }
                                 }
                             }
-                        });
+                        }
                     } catch ( Exception ex ) {
                         string msg = ex.Message;
+                        Logger.logTextLnU(DateTime.Now, "image save ex:" + msg);
                     }
                 }
 
-                // send alarm photo to Telegram
+                // send motion alarm photo to Telegram
                 if ( _alarmNotify ) {
                     Task.Run(() => {
                         try {
-                            if ( Settings.SaveSequences && _motionsList.Count > 1 ) {
-                                // only if current motion is consecutive to a previous one, send it - supposed to reduce the number of false positive alarms
-                                if ( _motionsList[_motionsList.Count - 1].consecutive ) {
-                                    _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
-                                    byte[] buffer = bitmapToByteArray(_origFrame);
-                                    _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm photo");
-                                }
-                            } else {
-                                // all alarm images are sent
-                                _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
-                                byte[] buffer = bitmapToByteArray(_origFrame);
-                                _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm photo");
-                            }
+                            // all alarm images are sent
+                            _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
+                            byte[] buffer = bitmapToByteArray(_origFrame);
+                            _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm photo");
                             Logger.logTextLn(DateTime.Now, "alarm photo sent");
                         } catch ( Exception ex ) {
                             string msg = ex.Message;
@@ -2176,6 +2252,46 @@ namespace MotionUVC
 
             // return assessment regarding motion detection
             return motionDetected;
+        }
+
+        // supposed to save not yet saved motion images, if they are consecutive
+        private void saveSequence() {
+            // loop list
+            for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
+                // only consider existing images
+                if ( _motionsList[i].imageMotion != null ) {
+                    // further checks
+                    if ( _motionsList[i].motionConsecutive && !_motionsList[i].motionSaved ) {
+                        // save to disk may take some time, so f&f
+                        try {
+                            // save hires, set 'save flag' & dispose
+                            _motionsList[i].imageMotion.Save(_motionsList[i].fileNameMotion, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            _motionsList[i].motionSaved = true;
+                            _motionsList[i].imageMotion.Dispose();
+                            _motionsList[i].imageMotion = null;
+                            // save lores if existing
+                            if ( _motionsList[i].imageProc != null ) {
+                                System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_motionsList[i].fileNameProc));
+                                _motionsList[i].imageProc.Save(_motionsList[i].fileNameProc, System.Drawing.Imaging.ImageFormat.Jpeg);
+                                _motionsList[i].imageProc.Dispose();
+                                _motionsList[i].imageProc = null;
+                            }
+                        } catch ( Exception ex ) {
+                            Logger.logTextLnU(DateTime.Now, "saveSequence ex: " + ex.Message);
+                        }
+                    } else {
+                        // applies to existing, but already saved images - ideally this should not happen 
+                        _motionsList[i].imageMotion.Dispose();
+                        _motionsList[i].imageMotion = null;
+                        if ( _motionsList[i].imageProc != null ) {
+                            _motionsList[i].imageProc.Dispose();
+                            _motionsList[i].imageProc = null;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
         }
 
         // supposed to reset an exception state, sometimes needed for pictureBox and 'red cross exception' <-- not needed when pictureBox is subclassed with try/catch OnPaint
@@ -2575,12 +2691,6 @@ namespace MotionUVC
             }
         }
 
-        // motion filename convention
-        public enum MotionFilenameConvention {
-            IMAGECOUNT = 0,
-            TIMESTAMP  = 1
-        }
-
         // webserver image type
         public enum WebserverImageType {
             LORES = 0,
@@ -2718,9 +2828,6 @@ namespace MotionUVC
         [Description("Minimize app at motion detection")]
         [ReadOnly(false)]
         public Boolean MinimizeApp { get; set; }
-        [Description("Motion image filenename: img<number>.jpg vs. <timestamp>.jpg")]
-        [ReadOnly(false)]
-        public MotionFilenameConvention MotionFilename { get; set; }
         [Description("Start making video, after closing the Settings dialog")]
         [Editor(typeof(ActionButtonVideoEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public string MakeMotionVideoNow { get; set; }
@@ -2849,16 +2956,6 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "MinimizeApp", "True"), out tmpBool) ) {
                 MinimizeApp = tmpBool;
             }
-            // saved motion filename convention
-            tmpStr = ini.IniReadValue(iniSection, "MotionFilenameConvention", "empty");
-            Array values = Enum.GetValues(typeof(MotionFilenameConvention));
-            foreach ( MotionFilenameConvention val in values ) {
-                if ( val.ToString() == tmpStr ) {
-                    MotionFilename = val;
-                    break;
-                }
-                MotionFilename = MotionFilenameConvention.IMAGECOUNT;
-            }
             // always false
             MakeVideoNow = false;
             // make daily motion video
@@ -2887,7 +2984,7 @@ namespace MotionUVC
             }
             // webserver image type
             tmpStr = ini.IniReadValue(iniSection, "WebserverImageType", "empty");
-            values = Enum.GetValues(typeof(WebserverImageType));
+            Array values = Enum.GetValues(typeof(WebserverImageType));
             foreach ( WebserverImageType val in values ) {
                 if ( val.ToString() == tmpStr ) {
                     WebserverImage = val;
@@ -2976,8 +3073,6 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "DetectMotion", DetectMotion.ToString());
             // minimze app while motion detection
             ini.IniWriteValue(iniSection, "MinimizeApp", MinimizeApp.ToString());
-            // motion filename convention
-            ini.IniWriteValue(iniSection, "MotionFilenameConvention", MotionFilename.ToString());
             // make daily motion video
             ini.IniWriteValue(iniSection, "MakeDailyVideo", MakeDailyVideo.ToString());
             // flag make daily motion video done
