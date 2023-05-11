@@ -148,7 +148,7 @@ namespace MotionUVC {
                     inputLines = null;
                 } catch ( Exception ex ) {
                     // only way to get here is, if client disconnects (X in browser, close browser) -> IOException is thrown
-                    Logger.logTextLnU(DateTime.Now, String.Format("handleTcpClient ex: client #{0} was closed", client.Client.Handle));
+                    Logger.logTextLn(DateTime.Now, String.Format("handleTcpClient ex: client #{0} was closed", client.Client.Handle));
                     // leave this inner client loop with 'inputLines = null' and quit
                     inputLines = null;
                 }
