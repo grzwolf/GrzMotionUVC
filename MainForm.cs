@@ -465,6 +465,8 @@ namespace MotionUVC
                 //    this.connectButton.PerformClick();
                 //}
             }
+            // sync to motion count from today
+            getTodaysMotionsCounters();
             // check whether settings were forcing a 'make video now'
             if ( Settings.MakeVideoNow ) {
                 Task.Run(() => { makeMotionVideo(Settings.CameraResolution); });
@@ -477,6 +479,30 @@ namespace MotionUVC
             Settings.ExposureVal = this.hScrollBarExposure.Value;
             Settings.ExposureMin = this.hScrollBarExposure.Minimum;
             Settings.ExposureMax = this.hScrollBarExposure.Maximum;
+        }
+
+        // update today's motions counters; perhaps useful, if app is restarted during the day
+        private void getTodaysMotionsCounters() {
+            DateTime now = DateTime.Now;
+            string nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            if ( DateTime.Now.TimeOfDay >= new System.TimeSpan(19, 0, 0) ) {
+                now = now.AddDays(1);
+                nowString = now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
+            string path = System.IO.Path.Combine(Settings.StoragePath, nowString);
+            System.IO.Directory.CreateDirectory(path);
+            DirectoryInfo di = new DirectoryInfo(path);
+            FileInfo[] files = di.GetFiles("*.jpg");
+            // save all but no sequences
+            if ( Settings.SaveMotion && !Settings.SaveSequences ) {
+                _motionsDetected = files.Length;
+                _consecutivesDetected = -1;
+            }
+            // save sequences only
+            if ( !Settings.SaveMotion && Settings.SaveSequences ) {
+                _consecutivesDetected = files.Length != 0 ? files.Length : -1;
+                _motionsDetected = _consecutivesDetected;
+            }
         }
 
         // a general timer 1x / 30s for app flow control
@@ -561,18 +587,7 @@ namespace MotionUVC
                 if ( !Settings.WriteLogfile ) {
                     Settings.WriteLogfile = true;
                 }
-                int consecutiveCount = 0;
-                try {
-                    // get number of consecutive motions
-                    for ( int i = 0; i < _motionsList.Count; i++ ) {
-                        if ( _motionsList[i].motionConsecutive ) {
-                            consecutiveCount++;
-                        }
-                    }
-                } catch ( Exception ex ) {
-                    Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick ex:{0}", ex.Message));
-                }
-                Logger.logTextLnU(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, consecutiveCount, _procMs, (_Bot != null)));
+                Logger.logTextLnU(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, _consecutivesDetected, _procMs, (_Bot != null)));
                 if ( !currentWriteLogStatus ) {
                     Settings.WriteLogfile = currentWriteLogStatus;
                 }
@@ -721,9 +736,7 @@ namespace MotionUVC
                     _dailyVideoInProgress = false;
                     Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: reset video done flag at midnight");
                     // sync to motion count from today
-                    string path = System.IO.Path.Combine(Settings.StoragePath, DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-                    System.IO.Directory.CreateDirectory(path);
-                    _motionsDetected = Directory.GetFiles(path, "*.jpg", SearchOption.TopDirectoryOnly).Length;
+                    getTodaysMotionsCounters();
                 }
             }
 
@@ -1729,11 +1742,8 @@ namespace MotionUVC
                 _prevFrame = null;
             }
             // sync to motion count from today
-            string path = System.IO.Path.Combine(Settings.StoragePath, DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-            System.IO.Directory.CreateDirectory(path);
-            _motionsDetected = Directory.GetFiles(path, "*.jpg", SearchOption.TopDirectoryOnly).Length;
+            getTodaysMotionsCounters();
             int excStep = -1;
-
             // loop as long as camera is running
             while ( _videoDevice.IsRunning ) {
 
@@ -2821,7 +2831,7 @@ namespace MotionUVC
         public Boolean SaveSequences { get; set; }
         [Description("Save hi resolution motion detection images")] 
         [ReadOnly(false)]
-        public Boolean SaveMotion { get; set; } 
+        public Boolean SaveMotion { get; set; }
         [Description("Auto start motion detection at app start")]
         [ReadOnly(false)]
         public Boolean DetectMotion { get; set; }
@@ -2873,7 +2883,7 @@ namespace MotionUVC
         [ReadOnly(true)]
         public string[] ListROIs { get; set; }
 
-         // INI: read PropertyGrid from ini
+        // INI: read PropertyGrid from ini
         public void fillPropertyGridFromIni()
         {
             IniFile ini = new IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
@@ -2947,7 +2957,7 @@ namespace MotionUVC
             // save motion images
             if ( bool.TryParse(ini.IniReadValue(iniSection, "SaveMotion", "False"), out tmpBool) ) {
                 SaveMotion = tmpBool;
-            } 
+            }
             // auto detect motion at app start
             if ( bool.TryParse(ini.IniReadValue(iniSection, "DetectMotion", "False"), out tmpBool) ) {
                 DetectMotion = tmpBool;
@@ -3068,7 +3078,7 @@ namespace MotionUVC
             // save motion sequences
             ini.IniWriteValue(iniSection, "SaveSequences", SaveSequences.ToString());
             // save motion images
-            ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString()); 
+            ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString());
             // auto detect motion at app start
             ini.IniWriteValue(iniSection, "DetectMotion", DetectMotion.ToString());
             // minimze app while motion detection
