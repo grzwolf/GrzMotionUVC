@@ -622,8 +622,7 @@ namespace MotionUVC
             // one check every 15 minutes
             if ( DateTime.Now.Minute % 15 == 0 && DateTime.Now.Second < 31 ) {
 
-                // clean up _motionList from 'non consecutive' images
-                _consecutivesDetected = 0;
+                // clean up _motionList from leftover Bitmaps
                 for ( int i=0; i < _motionsList.Count - 1; i++ ) {
                     // ignore all entries younger than 60s: TBD ?? what if a sequence is longer than 60s ??
                     if ( (DateTime.Now.TimeOfDay.TotalSeconds - _motionsList[i].motionDateTime.TimeOfDay.TotalSeconds) > 60 ) {
@@ -637,10 +636,6 @@ namespace MotionUVC
                             _motionsList[i].imageProc.Dispose();
                             _motionsList[i].imageProc = null;
                         }
-                    }
-                    // count all consecutive motions
-                    if ( _motionsList[i].motionConsecutive ) {
-                        _consecutivesDetected++;
                     }
                 }
 
@@ -2198,14 +2193,7 @@ namespace MotionUVC
                                     _motionsList[_motionsList.Count - 2].motionConsecutive = true;
                                     _motionsList[_motionsList.Count - 1].motionConsecutive = true;
 
-                                    // consecutive motions counter
-                                    if ( _consecutivesDetected == -1 ) {
-                                        _consecutivesDetected = 3;
-                                    } else {
-                                        _consecutivesDetected++;
-                                    }
-
-                                    // save a consecutive image to disk (only @ 1st enter it's sequence of three images)
+                                    // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
                                     saveSequence();
 
                                     // make a motion sequence video only in this specific case
@@ -2274,8 +2262,9 @@ namespace MotionUVC
                     if ( _motionsList[i].motionConsecutive && !_motionsList[i].motionSaved ) {
                         // save to disk may take some time, so f&f
                         try {
-                            // save hires, set 'save flag' & dispose
+                            // save hires, inc counter, set 'save flag' & dispose
                             _motionsList[i].imageMotion.Save(_motionsList[i].fileNameMotion, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            _consecutivesDetected++;
                             _motionsList[i].motionSaved = true;
                             _motionsList[i].imageMotion.Dispose();
                             _motionsList[i].imageMotion = null;
