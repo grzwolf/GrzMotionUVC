@@ -597,7 +597,7 @@ namespace MotionUVC
                 }
 
                 // check if remaining disk space is less than 2GB
-                if ( Settings.SaveMotion && driveFreeBytes(Settings.StoragePath) < TWO_GB ) {
+                if ( (Settings.SaveMotion || Settings.SaveSequences) && driveFreeBytes(Settings.StoragePath) < TWO_GB ) {
                     Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: free disk space <2GB");
                     // delete avi-files in storage folder, try to gain 10GB space (could mean all of them)
                     deleteAviFiles(Settings.StoragePath, TEN_GB);
