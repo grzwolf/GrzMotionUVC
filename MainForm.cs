@@ -14,8 +14,6 @@ using System.Globalization;
 using System.IO;
 using TeleSharp.Entities;  
 using TeleSharp.Entities.SendEntities;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 // Accord.Video.FFMPEG: !! needs both VC_redist.x86.exe and VC_redist.x64.exe installed on target PC !!
@@ -25,7 +23,6 @@ using GrzTools;
 using System.Drawing.Drawing2D;
 using System.Diagnostics;
 using System.Linq;
-using System.Windows.Forms.Design;
 using System.Drawing.Design;
 
 namespace MotionUVC
@@ -84,7 +81,7 @@ namespace MotionUVC
         }
         List<Motion> _motionsList = new List<Motion>();                      // list of Motion, which are motion sequences if 'consecutive' is true
 
-        int _motionsDetected = 0;                                            // all motion detection counter
+        int _motionsDetected = 0;                                            // all motions detection counter
         int _consecutivesDetected = -1;                                      // consecutive motions counter
         bool _justConnected = false;                                         // just connected 
         double _fps = 0;                                                     // current frame rate 
@@ -240,7 +237,7 @@ namespace MotionUVC
                 _mouseDown.Y = e.Y;
             }
 
-            // reset all zoom & pan to 1:1
+            // reset all zoom & pan to centered 1:1
             if ( e.Button == MouseButtons.Right ) {
                 _eOld = new System.Windows.Point(-1, -1);
                 _iScaleStep = 0;
@@ -324,7 +321,7 @@ namespace MotionUVC
             // memorize the initial camera connect button text
             _buttonConnectString = this.connectButton.Text;
 
-            // add "about entry" to system menu
+            // add "about entry" to app's system menu
             SetupSystemMenu();
 
             // distinguish between 'forced reboot app start after ping fail' and a 'regular app start'
@@ -501,6 +498,7 @@ namespace MotionUVC
             // save sequences only
             if ( !Settings.SaveMotion && Settings.SaveSequences ) {
                 _consecutivesDetected = files.Length != 0 ? files.Length : -1;
+                // a bit of fake: _motionsDetected will always be larger than _consecutivesDetected, but _motionsDetected is not saved anywhere
                 _motionsDetected = _consecutivesDetected;
                 // in case path _nonc exists, adjust _motionsDetected accordingly
                 string noncPath = System.IO.Path.Combine(Settings.StoragePath, nowString + "_nonc");
@@ -755,7 +753,7 @@ namespace MotionUVC
                 }
             }
 
-            // only care, if daily reboot Windows is active
+            // only care, if daily reboot of Windows-OS is active
             if ( Settings.RebootDaily ) {
                 // timer tick is 30s, so within a range of 60s this condition will be met once for sure
                 if ( DateTime.Now.TimeOfDay >= MainForm.BootTimeBeg && DateTime.Now.TimeOfDay <= MainForm.BootTimeEnd ) {
@@ -1758,8 +1756,11 @@ namespace MotionUVC
             }
             // sync to motion count from today
             getTodaysMotionsCounters();
-            int excStep = -1;
+
+            //
             // loop as long as camera is running
+            //
+            int excStep = -1;
             while ( _videoDevice.IsRunning ) {
 
                 // calc fps
@@ -1894,7 +1895,7 @@ namespace MotionUVC
             return rescaled;
         }
 
-        // return RGB pixel data as two boxed (boxDim x boxDim) gray byte arrasy
+        // return RGB pixel data as two boxed (boxDim x boxDim) gray byte arrays
         public unsafe void TwoBmp24bppToGray8bppByteArrayScaledBox(Bitmap bmp_1, out byte[] arr_1, Bitmap bmp_2, out byte[] arr_2, int boxDim) {
             // sanity checks to make sure. both bmp have matching dimensions 
             arr_1 = new byte[1];
@@ -1964,7 +1965,7 @@ namespace MotionUVC
             bmp_2.UnlockBits(bmpData_2);
         }
 
-        // write boxed (boxDim x boxDim) gray byte array into a 24bppRgb color bmp as overlay
+        // write boxed (boxDim x boxDim) gray byte array into a larger 24bppRgb color bmp as overlay
         public unsafe Bitmap ScaledBoxGray8bppByteArrayToBmp24bppOverlay(Bitmap ori, Rectangle rcDest, byte[] arr, int boxDim, bool motionDetected) {
             // box dimension constraints
             int arrHeight = rcDest.Height / boxDim;
@@ -2009,7 +2010,9 @@ namespace MotionUVC
             return ori;
         }
 
+        //
         // motion detector process image method
+        //
         bool detectMotion(Bitmap currFrame, Bitmap prevFrame) {
 
             // camera running w/o motion detection
@@ -2114,7 +2117,7 @@ namespace MotionUVC
                 ImageWebServer.Image = (Settings.WebserverImage == AppSettings.WebserverImageType.PROCESS) ? (Bitmap)_procFrame.Clone() : (Bitmap)_currFrame.Clone();
             }
 
-            // save motions needs useful names
+            // save motions needs useful names based on timestamps
             DateTime nowFile = DateTime.Now;
             DateTime nowPath = DateTime.Now;
             string nowStringFile = nowFile.ToString("yyyy-MM-dd-HH-mm-ss_fff", CultureInfo.InvariantCulture);
@@ -2196,7 +2199,7 @@ namespace MotionUVC
                         
                         // consider motion sequence
                         if ( Settings.SaveSequences || _alarmSequence ) {
-                            // save 'motion sequence file' either to list or add an info entry depending on 'motion save status'
+                            // save 'motion sequence data' either to list or add an info entry depending on 'motion save status'
                             if ( !motionSaved ) {
                                 _motionsList.Add(new Motion(fileName, nowFile, (Bitmap)_origFrame.Clone(), fileNameDbg, Settings.DebugProcessImages ? (Bitmap)_procFrame.Clone() : null));
                             } else {
@@ -2295,7 +2298,7 @@ namespace MotionUVC
                 if ( _motionsList[i].imageMotion != null ) {
                     // further checks
                     if ( _motionsList[i].motionConsecutive && !_motionsList[i].motionSaved ) {
-                        // save to disk may take some time, so f&f
+                        // save to disk may take some time
                         try {
                             // save hires, inc counter, set 'save flag' & dispose
                             _motionsList[i].imageMotion.Save(_motionsList[i].fileNameMotion, System.Drawing.Imaging.ImageFormat.Jpeg);
@@ -2328,7 +2331,7 @@ namespace MotionUVC
             }
         }
 
-        // supposed to reset an exception state, sometimes needed for pictureBox and 'red cross exception' <-- not needed when pictureBox is subclassed with try/catch OnPaint
+        // supposed to reset an exception state, sometimes needed for pictureBox and 'red cross exception' <-- perhaps not needed when pictureBox is subclassed with try/catch OnPaint
         void ResetExceptionState(Control control) {
             typeof(Control).InvokeMember("SetState", System.Reflection.BindingFlags.NonPublic |
                                                      System.Reflection.BindingFlags.InvokeMethod |
