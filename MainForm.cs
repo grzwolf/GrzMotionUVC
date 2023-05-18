@@ -502,6 +502,12 @@ namespace MotionUVC
             if ( !Settings.SaveMotion && Settings.SaveSequences ) {
                 _consecutivesDetected = files.Length != 0 ? files.Length : -1;
                 _motionsDetected = _consecutivesDetected;
+                // in case path _nonc exists, adjust _motionsDetected accordingly
+                string noncPath = System.IO.Path.Combine(Settings.StoragePath, nowString + "_nonc");
+                di = new DirectoryInfo(noncPath);
+                if ( di.Exists ) {
+                    _motionsDetected += di.GetFiles("*.jpg").Length;
+                }
             }
         }
 
@@ -631,10 +637,24 @@ namespace MotionUVC
                             _motionsList[i].imageMotion.Dispose();
                             _motionsList[i].imageMotion = null;
                         }
-                        // release lores images
-                        if ( _motionsList[i].imageProc != null ) {
-                            _motionsList[i].imageProc.Dispose();
-                            _motionsList[i].imageProc = null;
+                        // lores images
+                        if ( Settings.DebugNonConsecutives ) {
+                            // save an release
+                            if ( _motionsList[i].imageProc != null ) {
+                                string pathNonC = System.IO.Path.GetDirectoryName(_motionsList[i].fileNameProc);
+                                pathNonC = pathNonC.Substring(0, pathNonC.Length - 4) + "nonc";
+                                string fileNonC = System.IO.Path.GetFileName(_motionsList[i].fileNameProc);
+                                System.IO.Directory.CreateDirectory(pathNonC);
+                                _motionsList[i].imageProc.Save(System.IO.Path.Combine(pathNonC, fileNonC), System.Drawing.Imaging.ImageFormat.Jpeg);
+                                _motionsList[i].imageProc.Dispose();
+                                _motionsList[i].imageProc = null;
+                            }
+                        } else {
+                            // release only
+                            if ( _motionsList[i].imageProc != null ) {
+                                _motionsList[i].imageProc.Dispose();
+                                _motionsList[i].imageProc = null;
+                            }
                         }
                     }
                 }
@@ -2256,6 +2276,21 @@ namespace MotionUVC
         private void saveSequence() {
             // loop list
             for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
+                // debug non consecutive images
+                if ( Settings.DebugNonConsecutives ) {
+                    if ( !_motionsList[i].motionConsecutive ) {
+                        // save lores if existing
+                        if ( _motionsList[i].imageProc != null ) {
+                            string pathNonC = System.IO.Path.GetDirectoryName(_motionsList[i].fileNameProc);
+                            pathNonC = pathNonC.Substring(0, pathNonC.Length - 4) + "nonc";
+                            string fileNonC = System.IO.Path.GetFileName(_motionsList[i].fileNameProc);
+                            System.IO.Directory.CreateDirectory(pathNonC);
+                            _motionsList[i].imageProc.Save(System.IO.Path.Combine(pathNonC, fileNonC), System.Drawing.Imaging.ImageFormat.Jpeg);
+                            _motionsList[i].imageProc.Dispose();
+                            _motionsList[i].imageProc = null;
+                        }
+                    }
+                }
                 // only consider existing images
                 if ( _motionsList[i].imageMotion != null ) {
                     // further checks
@@ -2815,6 +2850,9 @@ namespace MotionUVC
         [Description("Save false positive images, useful for debug purposes")]
         [ReadOnly(false)]
         public Boolean DebugFalsePositiveImages { get; set; }
+        [Description("Save non consecutive images, useful for debug purposes")]
+        [ReadOnly(false)]
+        public Boolean DebugNonConsecutives { get; set; }
         [Description("Save motion detection sequences")]
         [ReadOnly(false)]
         public Boolean SaveSequences { get; set; }
@@ -2938,6 +2976,10 @@ namespace MotionUVC
             // debug false positive images
             if ( bool.TryParse(ini.IniReadValue(iniSection, "DebugFalsePositives", "False"), out tmpBool) ) {
                 DebugFalsePositiveImages = tmpBool;
+            }
+            // debug non consecutive images
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "DebugNonConsecutives", "False"), out tmpBool) ) {
+                DebugNonConsecutives = tmpBool;
             }
             // save motion sequences
             if ( bool.TryParse(ini.IniReadValue(iniSection, "SaveSequences", "False"), out tmpBool) ) {
@@ -3064,6 +3106,8 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "DebugProc", DebugProcessImages.ToString());
             // debug false positive images
             ini.IniWriteValue(iniSection, "DebugFalsePositives", DebugFalsePositiveImages.ToString());
+            // debug non consecutive images
+            ini.IniWriteValue(iniSection, "DebugNonConsecutives", DebugNonConsecutives.ToString());
             // save motion sequences
             ini.IniWriteValue(iniSection, "SaveSequences", SaveSequences.ToString());
             // save motion images
