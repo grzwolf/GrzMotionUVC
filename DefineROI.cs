@@ -284,19 +284,31 @@ namespace MotionUVC {
                 if ( ROIsList[i].rect.Width > 0 && ROIsList[i].rect.Height > 0 ) {
                     // update panel to active ROI
                     if ( i == currListNdx ) {
-                        // update shall only take place, if thre was no parameter change at all
+                        // update shall only take place, if there was no parameter change at all, AKA scolling thru ROIs
                         if ( !dirtyFlag ) {
                             // update panel with ROI parameters according to active ROI
                             this.labelActiveROI.Text = currListNdx.ToString();
+                            // disable event handlers
+                            this.numericUpDownPosX.ValueChanged -= new System.EventHandler(this.numericUpDownPosX_ValueChanged);
+                            this.numericUpDownWidthX.ValueChanged -= new System.EventHandler(this.numericUpDownWidthX_ValueChanged);
+                            this.numericUpDownPosY.ValueChanged -= new System.EventHandler(this.numericUpDownPosY_ValueChanged);
+                            this.numericUpDownHeightY.ValueChanged -= new System.EventHandler(this.numericUpDownHeightY_ValueChanged);
+                            // update numeric controls, which do normally some min/max checks
                             this.numericUpDownPosX.Value = ROIsList[i].rect.X;
                             this.numericUpDownWidthX.Value = ROIsList[i].rect.Width;
                             this.numericUpDownPosY.Value = ROIsList[i].rect.Y;
                             this.numericUpDownHeightY.Value = ROIsList[i].rect.Height;
+                            // enable event handlers
+                            this.numericUpDownPosX.ValueChanged += new System.EventHandler(this.numericUpDownPosX_ValueChanged);
+                            this.numericUpDownWidthX.ValueChanged += new System.EventHandler(this.numericUpDownWidthX_ValueChanged);
+                            this.numericUpDownPosY.ValueChanged += new System.EventHandler(this.numericUpDownPosY_ValueChanged);
+                            this.numericUpDownHeightY.ValueChanged += new System.EventHandler(this.numericUpDownHeightY_ValueChanged);
+                            // update other params
                             this.numericUpDownIntensity.Value = ROIsList[i].thresholdIntensity;
                             this.textBoxThreshold.Text = (ROIsList[i].thresholdChanges * 100.0f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
                             this.numericUpDownBoxScaler.Value = ROIsList[i].boxScaler;
                             this.checkBoxReferenceROI.Checked = ROIsList[i].reference;
-                            // intentional: because all input controls were updated, what sets dirtyFlag to true 
+                            // intentional set to false: because some input controls were updated, what sets dirtyFlag to true - but here we are only scrolling thru ROIs !! not changing them !!
                             dirtyFlag = false;
                         }
                     }
