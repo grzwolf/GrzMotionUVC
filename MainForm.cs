@@ -3203,8 +3203,9 @@ namespace MotionUVC
                 try {
                     WritePrivateProfileString(Section, Key, Value, this.path);
                 }
-                catch ( Exception ) {
-                    MessageBox.Show("INI-File could not be saved. Please select another 'home folder' in the Main Window.", "Error");
+                catch ( Exception ex ) {
+                    Logger.logTextLnU(DateTime.Now, "IniWriteValue ex: " + ex.Message);
+                    AutoMessageBox.Show("INI-File could not be saved. Please select another 'home folder' in the Main Window.", "Error", 5000);
                 }
             }
             public string IniReadValue(string Section, string Key, string DefaultValue)
