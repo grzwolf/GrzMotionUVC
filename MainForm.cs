@@ -48,7 +48,7 @@ namespace MotionUVC
                                                                              
         Bitmap _origFrame = null;                                            // current camera frame original
         public static Bitmap _currFrame = null;                              // current camera scaled frame (typically 800 x 600)
-        Bitmap _procFrame = null;                                            // current camera scaled proecessed frame
+        Bitmap _procFrame = null;                                            // current camera scaled processed frame
         Bitmap _prevFrame = null;                                            // previous camera scaled frame
         double _frameAspectRatio = 1.3333f;                                  // default value until it is overridden via 'firstImageProcessing' in grabber 
 
@@ -225,7 +225,7 @@ namespace MotionUVC
             base.OnMouseWheel(e);
         }
         private void pictureBox_OnMouseDown(object sender, MouseEventArgs e) {
-            // sanity chack
+            // sanity check
             if ( !_stillImage ) {
                 return;
             }
@@ -357,13 +357,13 @@ namespace MotionUVC
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
             Logger.logTextLnU(DateTime.Now, String.Format("{0} {1}", assembly.FullName, fvi.FileVersion));
-            // distinguish between reular app start and a restart after app crash 
+            // distinguish between regular app start and a restart after app crash 
             if ( bool.Parse(ini.IniReadValue("MotionUVC", "AppCrash", "False")) ) {
                 Logger.logTextLnU(DateTime.Now, "App was restarted after crash");
             } else {
                 Logger.logTextLn(DateTime.Now, "App start regular");
             }
-            // assume an app crash as default behaviour: this flag is reset to False, if app closes the normal way
+            // assume an app crash as default behavior: this flag is reset to False, if app closes the normal way
             ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             // set app properties according to settings; in case ini craps out, delete it and begin from scratch with defaults
             try {
@@ -601,7 +601,7 @@ namespace MotionUVC
                     Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: free disk space <2GB");
                     // delete avi-files in storage folder, try to gain 10GB space (could mean all of them)
                     deleteAviFiles(Settings.StoragePath, TEN_GB);
-                    // if the remaining disk space is still less than 1GB, start deleteing the oldest image folder
+                    // if the remaining disk space is still less than 1GB, start deleting the oldest image folder
                     if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
                         Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: free disk space <1GB");
                         deleteOldestImageFolder(Settings.StoragePath);
@@ -975,7 +975,7 @@ namespace MotionUVC
             }
         }
 
-        // continously check network availibility: needed for Telegram bot
+        // continuously check network availability: needed for Telegram bot
         System.Net.NetworkInformation.PingReply execPing(string strTestIP) {
             System.Net.NetworkInformation.Ping pinger = new System.Net.NetworkInformation.Ping();
             System.Net.NetworkInformation.PingReply reply = pinger.Send(strTestIP, 10);
@@ -1085,7 +1085,7 @@ namespace MotionUVC
         private void OnLiveTick(DateTime now) {
             _connectionLiveTick = now;
             if ( _telegramLiveTickErrorCount > 0 ) {
-                // tlegram restart after a live tick fail was successful
+                // telegram restart after a live tick fail was successful
                 Logger.logTextLnU(DateTime.Now, String.Format("OnLiveTick: Telegram now active after previous fail #{0}", _telegramLiveTickErrorCount));
                 _telegramLiveTickErrorCount = 0;
             }
@@ -1784,7 +1784,7 @@ namespace MotionUVC
                     excStep = 1;
                     _origFrame = (Bitmap)BmpRingBuffer.bmp.Clone();
 
-                    // prepare and add timestamp watermark + motions detectetd counter
+                    // prepare and add timestamp watermark + motions detected counter
                     if ( firstImageProcessing ) {
                         timestampHeight = _origFrame.Height / 30;
                         timestampFont = new Font("Arial", timestampHeight, FontStyle.Bold, GraphicsUnit.Pixel);
@@ -1911,7 +1911,7 @@ namespace MotionUVC
             // box dimension constraints
             int arrWidth = bmp_1.Width / boxDim;
             int arrHeight = bmp_1.Height / boxDim;
-            // adjusted bmp width and height (ajusted values are a multiple to boxDim)
+            // adjusted bmp width and height (adjusted values are a multiple to boxDim)
             int bmpWidth = arrWidth * boxDim;
             int bmpFullWidth = bmpWidth * 3;
             int bmpHeight = arrHeight * boxDim;
@@ -2054,7 +2054,7 @@ namespace MotionUVC
                     if ( Settings.ExposureByApp ) {
                         //  get the average gray value of the current tile
                         byte avgGrayCurr = Bmp24bppToGreenAverage(currTile);
-                        // store it in a buffer for further imspection
+                        // store it in a buffer for further inspection
                         GrayAvgBuffer.SetLatestValue(avgGrayCurr);
                     }
                 }
@@ -2478,7 +2478,7 @@ namespace MotionUVC
                 }
             }
 
-            // it is essential to call the base behaviour
+            // it is essential to call the base behavior
             base.WndProc(ref m);
         }
 
@@ -3117,7 +3117,7 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString());
             // auto detect motion at app start
             ini.IniWriteValue(iniSection, "DetectMotion", DetectMotion.ToString());
-            // minimze app while motion detection
+            // minimize app while motion detection
             ini.IniWriteValue(iniSection, "MinimizeApp", MinimizeApp.ToString());
             // make daily motion video
             ini.IniWriteValue(iniSection, "MakeDailyVideo", MakeDailyVideo.ToString());

@@ -284,7 +284,7 @@ namespace MotionUVC {
                 if ( ROIsList[i].rect.Width > 0 && ROIsList[i].rect.Height > 0 ) {
                     // update panel to active ROI
                     if ( i == currListNdx ) {
-                        // update shall only take place, if there was no parameter change at all, AKA scolling thru ROIs
+                        // update shall only take place, if there was no parameter change at all, AKA scrolling thru ROIs
                         if ( !dirtyFlag ) {
                             // update panel with ROI parameters according to active ROI
                             this.labelActiveROI.Text = currListNdx.ToString();
@@ -312,7 +312,7 @@ namespace MotionUVC {
                             dirtyFlag = false;
                         }
                     }
-                    // ROI border color depends on: selected rect vs. refrence vs. 'normal' show
+                    // ROI border color depends on: selected rect vs. reference vs. 'normal' show
                     using ( Pen pen = currListNdx == i ? new Pen(Color.Red, 2) : ROIsList[i].reference ? new Pen(Color.Yellow, 1) : new Pen(Color.Green, 1) ) {
                         // special treatment for currently selected ROI
                         if ( i == currListNdx ) {

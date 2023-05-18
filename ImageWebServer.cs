@@ -164,7 +164,7 @@ namespace MotionUVC {
             }
         }
 
-        // continously send images to a web client (browser) via html protocol
+        // continuously send images to a web client (browser) via html protocol
         private static void sendImagesToWebClient(ref bool bRun, TcpClient client, NetworkStream stream) {
 
             // send image awareness #1 (multipart data) to client

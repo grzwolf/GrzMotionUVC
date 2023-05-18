@@ -527,7 +527,7 @@ namespace DesktopColorPicker
             try
             {
                 // Redraw and continue the timer if we're visible, enabled and not in DesignMode
-                // The timer is also disabled here because the Timer component seems to have an error (it will crashafter a while!?). Restarting the timer is a workaround.
+                // The timer is also disabled here because the Timer component seems to have an error (it will crash after a while!?). Restarting the timer is a workaround.
                 UpdateTimer.Stop();
                 if (IsEnabled)
                 {
