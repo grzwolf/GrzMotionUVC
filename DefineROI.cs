@@ -172,7 +172,7 @@ namespace MotionUVC {
             this.pictureBox.Update();
         }
         private void pictureBox_MouseMove(object sender, MouseEventArgs e) {
-            if ( e.X >= this.pictureBox.Image.Height || e.Y >= this.pictureBox.Image.Height ) {
+            if ( e.X >= this.pictureBox.Image.Width || e.Y >= this.pictureBox.Image.Height ) {
                 return;
             }
             if ( !currRectDrawing ) {
