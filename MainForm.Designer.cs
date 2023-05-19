@@ -45,7 +45,7 @@
             this.panel4 = new System.Windows.Forms.Panel();
             this.panelGraphs = new System.Windows.Forms.Panel();
             this.tableLayoutPanelGraphs = new System.Windows.Forms.TableLayoutPanel();
-            this.panelCameraButtons = new System.Windows.Forms.Panel();
+            this.panelCameraButtons = new System.Windows.Forms.TableLayoutPanel();
             this.timerCheckTelegramLiveTick = new System.Windows.Forms.Timer(this.components);
             this.tableLayoutPanelMain.SuspendLayout();
             this.panel4.SuspendLayout();
@@ -62,6 +62,7 @@
             this.devicesCombo.Name = "devicesCombo";
             this.devicesCombo.Size = new System.Drawing.Size(136, 21);
             this.devicesCombo.TabIndex = 1;
+            this.toolTip.SetToolTip(this.devicesCombo, "available cameras");
             this.devicesCombo.SelectedIndexChanged += new System.EventHandler(this.devicesCombo_SelectedIndexChanged);
             // 
             // videoResolutionsCombo
@@ -73,6 +74,7 @@
             this.videoResolutionsCombo.Name = "videoResolutionsCombo";
             this.videoResolutionsCombo.Size = new System.Drawing.Size(136, 21);
             this.videoResolutionsCombo.TabIndex = 3;
+            this.toolTip.SetToolTip(this.videoResolutionsCombo, "available camera resolutions");
             this.videoResolutionsCombo.SelectedIndexChanged += new System.EventHandler(this.videoResolutionsCombo_SelectedIndexChanged);
             // 
             // connectButton
@@ -83,7 +85,7 @@
             this.connectButton.Size = new System.Drawing.Size(74, 54);
             this.connectButton.TabIndex = 6;
             this.connectButton.Text = "&Start";
-            this.toolTip.SetToolTip(this.connectButton, "start camera");
+            this.toolTip.SetToolTip(this.connectButton, "start/stop camera");
             this.connectButton.UseVisualStyleBackColor = true;
             this.connectButton.Click += new System.EventHandler(this.connectButton_Click);
             // 
@@ -140,9 +142,9 @@
             // 
             this.buttonDefaultCameraProps.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.buttonDefaultCameraProps.Location = new System.Drawing.Point(3, 4);
+            this.buttonDefaultCameraProps.Location = new System.Drawing.Point(3, 3);
             this.buttonDefaultCameraProps.Name = "buttonDefaultCameraProps";
-            this.buttonDefaultCameraProps.Size = new System.Drawing.Size(60, 23);
+            this.buttonDefaultCameraProps.Size = new System.Drawing.Size(60, 24);
             this.buttonDefaultCameraProps.TabIndex = 0;
             this.buttonDefaultCameraProps.Text = "default";
             this.toolTip.SetToolTip(this.buttonDefaultCameraProps, "reset all camera properties to default");
@@ -168,6 +170,7 @@
             this.buttonProperties.Size = new System.Drawing.Size(53, 53);
             this.buttonProperties.TabIndex = 10;
             this.buttonProperties.Text = "Camera Settings";
+            this.toolTip.SetToolTip(this.buttonProperties, "camera specific settings");
             this.buttonProperties.UseVisualStyleBackColor = true;
             this.buttonProperties.Click += new System.EventHandler(this.buttonProperties_Click);
             // 
@@ -205,6 +208,7 @@
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelMain.Size = new System.Drawing.Size(454, 400);
             this.tableLayoutPanelMain.TabIndex = 11;
+            this.tableLayoutPanelMain.MouseHover += new System.EventHandler(this.tableLayoutPanel_MouseHover);
             // 
             // panel4
             // 
@@ -242,13 +246,19 @@
             // 
             // panelCameraButtons
             // 
-            this.panelCameraButtons.Controls.Add(this.buttonAutoExposure);
-            this.panelCameraButtons.Controls.Add(this.buttonDefaultCameraProps);
+            this.panelCameraButtons.ColumnCount = 2;
+            this.panelCameraButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.panelCameraButtons.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.panelCameraButtons.Controls.Add(this.buttonDefaultCameraProps, 0, 0);
+            this.panelCameraButtons.Controls.Add(this.buttonAutoExposure, 1, 0);
             this.panelCameraButtons.Location = new System.Drawing.Point(201, 30);
             this.panelCameraButtons.Margin = new System.Windows.Forms.Padding(0);
             this.panelCameraButtons.Name = "panelCameraButtons";
+            this.panelCameraButtons.RowCount = 1;
+            this.panelCameraButtons.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.panelCameraButtons.Size = new System.Drawing.Size(133, 30);
             this.panelCameraButtons.TabIndex = 21;
+            this.panelCameraButtons.MouseHover += new System.EventHandler(this.tableLayoutPanel_MouseHover);
             // 
             // timerCheckTelegramLiveTick
             // 
@@ -296,7 +306,7 @@
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanelGraphs;
         private System.Windows.Forms.HScrollBar hScrollBarExposure;
         private System.Windows.Forms.Timer timerCheckTelegramLiveTick;
-        private System.Windows.Forms.Panel panelCameraButtons;
+        private System.Windows.Forms.TableLayoutPanel panelCameraButtons;
         private System.Windows.Forms.Button buttonAutoExposure;
         private System.Windows.Forms.Button buttonDefaultCameraProps;
         //        private System.Windows.Forms.PictureBox pictureBox;

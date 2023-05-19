@@ -391,7 +391,7 @@ namespace MotionUVC
             this.hScrollBarExposure.Minimum = Settings.ExposureMin;
             this.hScrollBarExposure.Maximum = Settings.ExposureMax;
             this.hScrollBarExposure.Value = Settings.ExposureVal;
-            this.toolTip.SetToolTip(this.hScrollBarExposure, "Camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
+            this.toolTip.SetToolTip(this.hScrollBarExposure, "camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
             // write to logfile
             Logger.WriteToLog = Settings.WriteLogfile;
             // get ROI motion zones
@@ -1402,7 +1402,7 @@ namespace MotionUVC
                 Settings.ExposureVal = hScrollBarExposure.Value;
                 Settings.ExposureMin = min;
                 Settings.ExposureMax = max;
-                this.toolTip.SetToolTip(this.hScrollBarExposure, "Camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
+                this.toolTip.SetToolTip(this.hScrollBarExposure, "camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
                 // prepare for camera exposure time monitoring / adjusting
                 GrayAvgBuffer.ResetData();
                 // disable camera combos
@@ -1503,7 +1503,7 @@ namespace MotionUVC
                 this.hScrollBarExposure.Value = value;
             }
             Settings.ExposureVal = hScrollBarExposure.Value;
-            this.toolTip.SetToolTip(this.hScrollBarExposure, "Camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
+            this.toolTip.SetToolTip(this.hScrollBarExposure, "camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
             // needed to update the scroller according to the new value
             this.PerformLayout();
         }
@@ -1634,7 +1634,7 @@ namespace MotionUVC
             _videoDevice.SetCameraProperty(CameraControlProperty.Exposure, this.hScrollBarExposure.Value, CameraControlFlags.Manual);
             Settings.ExposureVal = hScrollBarExposure.Value;
             Settings.ExposureAuto = false;
-            this.toolTip.SetToolTip(this.hScrollBarExposure, "Camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
+            this.toolTip.SetToolTip(this.hScrollBarExposure, "camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
         }
 
         // EXPERIMENTAL: camera exposure time monitor helper, average brightness of bmp
@@ -2545,6 +2545,76 @@ namespace MotionUVC
             } else {
                 Settings.CopyAllTo(oldSettings, out Settings);
             }
+        }
+
+        // allow panel with disabled controls to show tooltips
+        private void tableLayoutPanel_MouseHover(object sender, EventArgs e) {
+            Point pt = ((TableLayoutPanel)sender).PointToClient(Control.MousePosition);
+            try {
+                TableLayoutPanelCellPosition pos = GetCellPosition((TableLayoutPanel)sender, pt);
+                Control c = ((TableLayoutPanel)sender).GetControlFromPosition(pos.Column, pos.Row);
+                if ( c != null ) {
+                    string tt = this.toolTip.GetToolTip(c);
+                    toolTip.Show(tt, (TableLayoutPanel)sender, pt, 500);
+                }
+            } catch {;} 
+        }
+        // TableLayoutPanel cell position under the mouse: https://stackoverflow.com/questions/39040847/show-text-when-hovering-over-cell-in-tablelayoutpanel-c-sharp 
+        private TableLayoutPanelCellPosition GetCellPosition(TableLayoutPanel panel, Point p) {
+            // cell position
+            TableLayoutPanelCellPosition pos = new TableLayoutPanelCellPosition(0, 0);
+            // panel size
+            Size size = panel.Size;
+            // get the cell row y coordinate
+            float y = 0;
+            for ( int i = 0; i < panel.RowCount; i++ ) {
+                // calculate the sum of the row heights.
+                SizeType type = panel.RowStyles[i].SizeType;
+                float height = panel.RowStyles[i].Height;
+                switch ( type ) {
+                    case SizeType.Absolute:
+                        y += height;
+                        break;
+                    case SizeType.Percent:
+                        y += height / 100 * size.Height;
+                        break;
+                    case SizeType.AutoSize:
+                        SizeF cellAutoSize = new SizeF(size.Width / panel.ColumnCount, size.Height / panel.RowCount);
+                        y += cellAutoSize.Height;
+                        break;
+                }
+                // check the mouse position to decide if the cell is in current row.
+                if ( (int)y > p.Y ) {
+                    pos.Row = i;
+                    break;
+                }
+            }
+            // get the cell column x coordinate
+            float x = 0;
+            for ( int i = 0; i < panel.ColumnCount; i++ ) {
+                // calculate the sum of the row widths
+                SizeType type = panel.ColumnStyles[i].SizeType;
+                float width = panel.ColumnStyles[i].Width;
+                switch ( type ) {
+                    case SizeType.Absolute:
+                        x += width;
+                        break;
+                    case SizeType.Percent:
+                        x += width / 100 * size.Width;
+                        break;
+                    case SizeType.AutoSize:
+                        SizeF cellAutoSize = new SizeF(size.Width / panel.ColumnCount, size.Height / panel.RowCount);
+                        x += cellAutoSize.Width;
+                        break;
+                }
+                // check the mouse position to decide if the cell is in current column
+                if ( (int)x > p.X ) {
+                    pos.Column = i;
+                    break;
+                }
+            }
+            // return the mouse position
+            return pos;
         }
 
     }
