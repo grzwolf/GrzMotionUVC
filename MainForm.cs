@@ -2620,21 +2620,17 @@ namespace MotionUVC
     }
 
     // app settings
-    public class AppSettings
-    {
+    public class AppSettings {
         // the literal name of the ini section
         private string iniSection = "MotionUVC";
 
         // show ROIs edit dialog from a property grid
         [Editor(typeof(RoiEditor), typeof(System.Drawing.Design.UITypeEditor))]
-        class RoiEditor : System.Drawing.Design.UITypeEditor
-        {
-            public override System.Drawing.Design.UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)
-            {
+        class RoiEditor : System.Drawing.Design.UITypeEditor {
+            public override System.Drawing.Design.UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context) {
                 return System.Drawing.Design.UITypeEditorEditStyle.Modal;
             }
-            public override object EditValue(ITypeDescriptorContext context, System.IServiceProvider provider, object value)
-            {
+            public override object EditValue(ITypeDescriptorContext context, System.IServiceProvider provider, object value) {
                 System.Windows.Forms.Design.IWindowsFormsEditorService svc = provider.GetService(typeof(System.Windows.Forms.Design.IWindowsFormsEditorService)) as System.Windows.Forms.Design.IWindowsFormsEditorService;
                 // no current image --> no ROIs edit dialog
                 if ( MainForm._currFrame != null ) {
@@ -2653,7 +2649,7 @@ namespace MotionUVC
                 } else {
                     MessageBox.Show("First, start camera in main window.");
                 }
-                return value; 
+                return value;
             }
         }
 
@@ -2784,8 +2780,7 @@ namespace MotionUVC
         }
 
         // make a copy of all class properties
-        public void CopyAllTo(AppSettings source, out AppSettings target)
-        {
+        public void CopyAllTo(AppSettings source, out AppSettings target) {
             target = new AppSettings();
             var type = typeof(AppSettings);
             foreach ( var sourceProperty in type.GetProperties() ) {
@@ -2805,42 +2800,66 @@ namespace MotionUVC
         }
 
         // define app properties
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public string CameraMoniker { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public Size CameraResolution { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public Size ScaledImageSize { get; set; }
+        [CategoryAttribute("Camera")]
         [Description("experimental - let MotionUVC adjust camera exposure time")]
         [ReadOnly(false)]
         public bool ExposureByApp { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public bool ExposureAuto { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public int ExposureVal { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public int ExposureMin { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public int ExposureMax { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public int Brightness { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public int BrightnessMin { get; set; }
+        [CategoryAttribute("Camera")]
         [ReadOnly(true)]
         public int BrightnessMax { get; set; }
+        [CategoryAttribute("User Interface")]
         [ReadOnly(true)]
         public Size FormSize { get; set; }
         [ReadOnly(true)]
+
+        [CategoryAttribute("User Interface")]
         public Point FormLocation { get; set; }
+        [Description("Minimize app at motion detection")]
+        [CategoryAttribute("User Interface")]
+        [ReadOnly(false)]
+        public Boolean MinimizeApp { get; set; }
+
+        [CategoryAttribute("Network")]
         [ReadOnly(true)]
         [Description("Current network status via ping")]
         public Boolean PingOk { get; set; }
+        [CategoryAttribute("Network")]
         [ReadOnly(false)]
         [Description("Network test IP address for ping")]
         public string PingTestAddress { get; set; }
         public string PingTestAddressRef;
+
+        [CategoryAttribute("Data Storage")]
         private string storagePath;
         [Description("App storage path: images, ini, logfiles")]
+        [CategoryAttribute("Data Storage")]
         [ReadOnly(false)]
         [EditorAttribute(typeof(FolderNameEditorWithRootFolder), typeof(UITypeEditor))]
         public string StoragePath { 
@@ -2875,7 +2894,9 @@ namespace MotionUVC
                 }
             } 
         }
+        [CategoryAttribute("Data Storage")]
         private string storagePathAlt;
+        [CategoryAttribute("Data Storage")]
         [Description("Alternative app storage path, if regular storage path (see above) is full")]
         [ReadOnly(false)]
         [EditorAttribute(typeof(FolderNameEditorWithRootFolder), typeof(UITypeEditor))]
@@ -2912,73 +2933,98 @@ namespace MotionUVC
             }
         }
         [Description("Free storage space")]
+        [CategoryAttribute("Data Storage")]
         [ReadOnly(true)]
         public string FreeStorageSpace { get; set; }
         [Description("App writes to logfile")]
+        [CategoryAttribute("Data Storage")]
         [ReadOnly(false)]
         public Boolean WriteLogfile { get; set; }
+
         [Description("Save processed images, useful for debug purposes")]
+        [CategoryAttribute("Debugging")]
         [ReadOnly(false)]
         public Boolean DebugProcessImages { get; set; }
         [Description("Save false positive images, useful for debug purposes")]
+        [CategoryAttribute("Debugging")]
         [ReadOnly(false)]
         public Boolean DebugFalsePositiveImages { get; set; }
         [Description("Save non consecutive images, useful for debug purposes")]
+        [CategoryAttribute("Debugging")]
         [ReadOnly(false)]
         public Boolean DebugNonConsecutives { get; set; }
+
+        [CategoryAttribute("Motion Save Strategy")]
         [Description("Save motion detection sequences")]
         [ReadOnly(false)]
         public Boolean SaveSequences { get; set; }
-        [Description("Save hi resolution motion detection images")] 
+        [Description("Save hi resolution motion detection images")]
+        [CategoryAttribute("Motion Save Strategy")]
         [ReadOnly(false)]
         public Boolean SaveMotion { get; set; }
         [Description("Auto start motion detection at app start")]
+        [CategoryAttribute("Motion Save Strategy")]
         [ReadOnly(false)]
         public Boolean DetectMotion { get; set; }
-        [Description("Minimize app at motion detection")]
-        [ReadOnly(false)]
-        public Boolean MinimizeApp { get; set; }
+        [CategoryAttribute("Motion Save Strategy")]
         [Description("Start making video, after closing the Settings dialog")]
         [Editor(typeof(ActionButtonVideoEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public string MakeMotionVideoNow { get; set; }
         public bool MakeVideoNow;
         [Description("Make daily video of saved motion images at 19:00")]
+        [CategoryAttribute("Motion Save Strategy")]
         [ReadOnly(false)]
         public Boolean MakeDailyVideo { get; set; }
         [Description("Status flag, whether the daily motion video is already generated")]
+        [CategoryAttribute("Motion Save Strategy")]
         [ReadOnly(false)]
         public Boolean DailyVideoDone { get; set; }
         [ReadOnly(false)]
+
+        [CategoryAttribute("Reboot Behaviour")]
         [Description("Reboot Windows daily at 00:30")]
         public Boolean RebootDaily { get; set; }
+        [CategoryAttribute("Reboot Behaviour")]
         [Description("Reboot Windows now - may take up to 30s")]
         [Editor(typeof(ActionButtonRebootEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public string RebootWindowsNow { get; set; }
-        [ReadOnly(false)]
+        [CategoryAttribute("Reboot Behaviour")]
         [Description("Reboot Windows allowed after ping fail > 10 minutes")]
-        public Boolean RebootPingAllowed { get; set; }
         [ReadOnly(false)]
+        public Boolean RebootPingAllowed { get; set; }
+        [CategoryAttribute("Reboot Behaviour")]
         [Description("Reboot after ping fail counter")]
+        [ReadOnly(false)]
         public int RebootPingCounter { get; set; }
+
+        [CategoryAttribute("Telegram")]
         [Description("Use Telegram bot")]
         [ReadOnly(false)]
         public Boolean UseTelegramBot { get; set; }
+        [CategoryAttribute("Telegram")]
         [Description("Telegram bot authentication token")]
         [ReadOnly(false)]
         public string BotAuthenticationToken { get; set; }
-        [Description("How to use a Telegram Bot")]
+        [CategoryAttribute("Telegram")]
+        [Description("Open link in browser to learn, how to use a Telegram Bot")]
         [Editor(typeof(FooEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public String HowToUseTelegram { get; set; }
+
+        [CategoryAttribute("Webserver")]
         [Description("Run app embedded image webserver")]
         [ReadOnly(false)]
         public Boolean RunWebserver { get; set; }
+        [CategoryAttribute("Webserver")]
         [Description("Webserver image type: LORES = low resolution image vs. PROCESS = processed image")]
         [ReadOnly(false)]
         public WebserverImageType WebserverImage { get; set; }
+
+        [CategoryAttribute("ROI")]
         [ReadOnly(true)]
         [Description("Edit regions of interest = ROIs")]
         [Editor(typeof(RoiEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public String EditROIs { get; set; }
+        [CategoryAttribute("ROI")]
         [Description("List all regions of interest = ROIs")]
         [ReadOnly(true)]
         public string[] ListROIs { get; set; }
