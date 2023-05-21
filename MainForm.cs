@@ -1646,12 +1646,15 @@ namespace MotionUVC
             byte* scan0 = (byte*)bData.Scan0.ToPointer();
             double lenBmp = bmp.Width * bmp.Height;
             int lenBmpFull = bData.Stride * bmp.Height - 3;
+            int stepCount = 3 * 100;        // 1% of pixels should be enough
             double collector = 0;
-            for ( int i = 0; i < lenBmpFull; i += 3 ) {
+            int divisor = 0;
+            for ( int i = 0; i < lenBmpFull; i += stepCount ) {
+                divisor++;
                 collector += scan0[i + 1];  // just green is faster than real gray 
             }
             bmp.UnlockBits(bData);
-            byte avgGreen = (byte)(collector / lenBmp);
+            byte avgGreen = (byte)(collector / divisor);
             return avgGreen;
         }
 
@@ -2023,6 +2026,7 @@ namespace MotionUVC
             // flags
             bool motionDetected = false;
             bool falsePositive = false;
+            bool itsDarkOutside = false;
 
             // we have ROIs, each of them generates a tile out of the two images to compare
             for ( int i = 0; i < ROICOUNT; i++ ) {
@@ -2050,10 +2054,12 @@ namespace MotionUVC
 
                 // if reference roi
                 if ( _roi[i].reference ) {
+                    //  get the average gray value of the current tile
+                    byte avgGrayCurr = Bmp24bppToGreenAverage(currTile);
+                    // day / night flag
+                    itsDarkOutside = (bool)(avgGrayCurr < 50);
                     // app could adjust camera exposure time by itself (fixes camera OV5640 with IR lens: sometimes tends to brightness jumps if ambient is very bright)
                     if ( Settings.ExposureByApp ) {
-                        //  get the average gray value of the current tile
-                        byte avgGrayCurr = Bmp24bppToGreenAverage(currTile);
                         // store it in a buffer for further inspection
                         GrayAvgBuffer.SetLatestValue(avgGrayCurr);
                     }
@@ -2171,9 +2177,9 @@ namespace MotionUVC
                         string pathDbg = System.IO.Path.Combine(Settings.StoragePath, nowStringPath + "_proc");
                         string fileNameDbg = System.IO.Path.Combine(pathDbg, nowStringFile + ".jpg");
 
-                        // only save current motion directly, if requested so
+                        // save current motion directly OR if it's dark outside (makes sure, nightly single events are saved)
                         bool motionSaved = false;
-                        if ( Settings.SaveMotion ) {
+                        if ( Settings.SaveMotion || itsDarkOutside ) {
                             // save hires
                             Task.Run(() => {
                                 _origFrame.Save(fileName, System.Drawing.Imaging.ImageFormat.Jpeg);
