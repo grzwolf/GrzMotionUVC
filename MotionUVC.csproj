@@ -201,6 +201,12 @@
       <DependentUpon>DefineROI.cs</DependentUpon>
     </Compile>
     <Compile Include="ImageWebServer.cs" />
+    <Compile Include="Loupe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Loupe.Designer.cs">
+      <DependentUpon>Loupe.cs</DependentUpon>
+    </Compile>
     <Compile Include="MagnifyingGlass.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -231,6 +237,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="DefineROI.resx">
       <DependentUpon>DefineROI.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Loupe.resx">
+      <DependentUpon>Loupe.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>

@@ -2432,6 +2432,7 @@ namespace MotionUVC
             // add a separator
             AppendMenu(menu, 0xA00, 0, null);
             // add items with unique message ID
+            AppendMenu(menu, 0, 1236, "Loupe");
             AppendMenu(menu, 0, 1235, "Still Image");
             AppendMenu(menu, 0, 1234, "About MotionUVC");
         }
@@ -2443,6 +2444,13 @@ namespace MotionUVC
 
             // WM_SYSCOMMAND is 0x112
             if ( m.Msg == WM_SYSCOMMAND ) {
+                // loupe
+                if ( m.WParam.ToInt32() == 1236 ) {
+                    Loupe.Loupe lp = new Loupe.Loupe();
+                    lp.StartPosition = FormStartPosition.Manual;
+                    lp.Location = new Point(this.Location.X - lp.Width - 5, this.Location.Y + 5);
+                    lp.Show(this);
+                }
                 // open a still image
                 if ( m.WParam.ToInt32() == 1235 ) {
                     if ( _videoDevice != null && _videoDevice.IsRunning ) {
