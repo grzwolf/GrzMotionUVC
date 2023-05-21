@@ -2454,6 +2454,7 @@ namespace MotionUVC
                 // open a still image
                 if ( m.WParam.ToInt32() == 1235 ) {
                     if ( _videoDevice != null && _videoDevice.IsRunning ) {
+                        MessageBox.Show("Stop the running camera prior to open a still image.", "Note");
                         return;
                     }
                     OpenFileDialog of = new OpenFileDialog();
