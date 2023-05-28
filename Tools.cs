@@ -16,6 +16,7 @@ namespace GrzTools
     public static class Logger {
         // write to log flag
         public static bool WriteToLog { get; set; }
+        public static String FullFileNameBase { get; set; }
         // unconditional logging
         public static void logTextLnU(DateTime now, string logtxt) {
             _writeLogOverrule = true;
@@ -54,7 +55,10 @@ namespace GrzTools
             sw.Stop();
             _busy = true;
             try {
-                string logFileName = Application.ExecutablePath + DateTime.Now.ToString("_yyyyMMdd", CultureInfo.InvariantCulture) + ".log";
+                if ( FullFileNameBase.Length == 0 ) {
+                    FullFileNameBase = Application.ExecutablePath;
+                }
+                string logFileName = FullFileNameBase + DateTime.Now.ToString("_yyyyMMdd", CultureInfo.InvariantCulture) + ".log";
                 System.IO.StreamWriter lsw = System.IO.File.AppendText(logFileName);
                 lsw.Write(logtxt);
                 lsw.Close();

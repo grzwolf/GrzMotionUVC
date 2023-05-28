@@ -353,6 +353,11 @@ namespace MotionUVC
             AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
             Settings.WriteLogfile = bool.Parse(ini.IniReadValue("MotionUVC", "WriteLogFile", "False"));
             Logger.WriteToLog = Settings.WriteLogfile;
+            string path = ini.IniReadValue("MotionUVC", "StoragePath", Application.StartupPath + "\\");
+            if ( !path.EndsWith("\\") ) {
+                path += "\\";
+            }
+            Logger.FullFileNameBase = path + Path.GetFileName(Application.ExecutablePath);
             Logger.logTextU("\r\n---------------------------------------------------------------------------------------------------------------------------\r\n");
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
@@ -394,6 +399,10 @@ namespace MotionUVC
             this.toolTip.SetToolTip(this.hScrollBarExposure, "camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
             // write to logfile
             Logger.WriteToLog = Settings.WriteLogfile;
+            if ( !Settings.StoragePath.EndsWith("\\") ) {
+                Settings.StoragePath += "\\";
+            }
+            Logger.FullFileNameBase = Settings.StoragePath + Path.GetFileName(Application.ExecutablePath);
             // get ROI motion zones
             _roi = Settings.getROIsListFromPropertyGrid();
             // handle Telegram bot usage
