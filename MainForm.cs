@@ -2214,6 +2214,7 @@ namespace MotionUVC
                         
                         // consider motion sequence
                         if ( Settings.SaveSequences || _alarmSequence ) {
+
                             // save 'motion sequence data' either to list or add an info entry depending on 'motion save status'
                             if ( !motionSaved ) {
                                 _motionsList.Add(new Motion(fileName, nowFile, (Bitmap)_origFrame.Clone(), fileNameDbg, Settings.DebugProcessImages ? (Bitmap)_procFrame.Clone() : null));
@@ -2223,8 +2224,14 @@ namespace MotionUVC
 
                             // need to wait for at least 3 queued images to allow some time comparison between the list entries
                             if ( _motionsList.Count > 2 ) {
-                                // check if the current motion is closer than 2.5s to the previous two list entries == a 'sequence' did happen
-                                if ( (_motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].motionDateTime.TimeOfDay.TotalSeconds) < 2.5f ) {
+
+                                // calc time differences: last to 3rd to last, last to penultimate, penultimate to 3rd to last
+                                double lastToThrd = _motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].motionDateTime.TimeOfDay.TotalSeconds;
+                                double lastToPenu = _motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 2].motionDateTime.TimeOfDay.TotalSeconds;
+                                double penuToThrd = _motionsList[_motionsList.Count - 2].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].motionDateTime.TimeOfDay.TotalSeconds;
+                                
+                                // check if the current motion happened within certain time intervals to previous motions --> 'sequence'
+                                if ( (lastToThrd < 2.5f) || ((lastToPenu < 1.5f) && (penuToThrd < 1.5f)) ) {
 
                                     // make the last three motions consecutive
                                     _motionsList[_motionsList.Count - 3].motionConsecutive = true;
