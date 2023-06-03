@@ -1472,7 +1472,7 @@ namespace MotionUVC
             try {
                 Bitmap snapshotFull = thisScreenShot();
                 Bitmap snapshotCtl = takeCtlScreenShot(this.pictureBox);
-                SnapshotForm snapshotForm = new SnapshotForm(snapshotFull, snapshotCtl);
+                SnapshotForm snapshotForm = new SnapshotForm(snapshotFull, snapshotCtl, (Bitmap)_origFrame.Clone());
                 snapshotForm.Show();
             } catch {
                 Logger.logTextLnU(DateTime.Now, "snapshotButton_Click: exception");

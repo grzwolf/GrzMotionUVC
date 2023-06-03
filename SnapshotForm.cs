@@ -11,7 +11,8 @@ namespace MotionUVC
 {
     public partial class SnapshotForm : Form
     {
-        Bitmap bitmap1, bitmap2;
+        Bitmap bitmap1, bitmap2, bitmap3;
+        bool fullRes = false;
         DateTime now;
 
         public SnapshotForm()
@@ -19,12 +20,13 @@ namespace MotionUVC
             InitializeComponent();
         }
 
-        public SnapshotForm(Bitmap bitmap1, Bitmap bitmap2)
+        public SnapshotForm(Bitmap bitmap1, Bitmap bitmap2, Bitmap bitmap3)
         {
             InitializeComponent();
             now = DateTime.Now;
             this.bitmap1 = (Bitmap)bitmap1.Clone();
             this.bitmap2 = (Bitmap)bitmap2.Clone();
+            this.bitmap3 = (Bitmap)bitmap3.Clone();
         }
 
         private void SnapshotForm_Shown(object sender, EventArgs e) {
@@ -32,9 +34,15 @@ namespace MotionUVC
         }
         private void buttonBmp1_Click(object sender, EventArgs e) {
             SetImage(this.bitmap1);
+            fullRes = false;
         }
         private void buttonBmp2_Click(object sender, EventArgs e) {
             SetImage(this.bitmap2);
+            fullRes = false;
+        }
+        private void buttonBmp3_Click(object sender, EventArgs e) {
+            SetImage(this.bitmap3);
+            fullRes = true;
         }
 
         public void SetImage(Bitmap bitmap)
@@ -87,6 +95,9 @@ namespace MotionUVC
                 try {
                     lock ( this ) {
                         Bitmap image = (Bitmap)pictureBox.Image;
+                        if ( fullRes ) {
+                            image = this.bitmap3;
+                        }
                         if ( ext == ".jpg" ) {
                             image.Save(saveFileDialog.FileName, encoder, myEncoderParameters);
                         } else {
