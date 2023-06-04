@@ -531,7 +531,7 @@ namespace MotionUVC
                     return;
                 }
                 // don't continue, if latest stored motion is older than 35s
-                if ( (DateTime.Now.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds) > 35 ) {
+                if ( (DateTime.Now - _motionsList[_motionsList.Count - 1].motionDateTime).TotalSeconds > 35 ) {
                     _alarmSequenceBusy = false;
                     return;
                 }
@@ -551,7 +551,7 @@ namespace MotionUVC
                     return;
                 }
                 // don't continue, if latest consecutive motion is older than 35s
-                if ( (DateTime.Now.TimeOfDay.TotalSeconds - mo.motionDateTime.TimeOfDay.TotalSeconds) > 35 ) {
+                if ( (DateTime.Now - mo.motionDateTime).TotalSeconds > 35 ) {
                     _alarmSequenceBusy = false;
                     return;
                 }
@@ -638,7 +638,7 @@ namespace MotionUVC
                 // clean up _motionList from leftover Bitmaps
                 for ( int i=0; i < _motionsList.Count - 1; i++ ) {
                     // ignore all entries younger than 60s: TBD ?? what if a sequence is longer than 60s ??
-                    if ( (DateTime.Now.TimeOfDay.TotalSeconds - _motionsList[i].motionDateTime.TimeOfDay.TotalSeconds) > 60 ) {
+                    if ( (DateTime.Now - _motionsList[i].motionDateTime).TotalSeconds > 60 ) {
                         // release hires images
                         if ( _motionsList[i].imageMotion != null ) {
                             _motionsList[i].imageMotion.Dispose();
@@ -1066,7 +1066,7 @@ namespace MotionUVC
         private void timerCheckTelegramLiveTick_Tick(object sender, EventArgs e) {
             if ( _Bot != null ) {
                 TimeSpan span = DateTime.Now - _connectionLiveTick;
-                if ( (span).TotalSeconds > 120 ) {
+                if ( span.TotalSeconds > 120 ) {
                     if ( _telegramLiveTickErrorCount > 10 ) {
                         // give up after more than 10 live tick errors and log app restart
                         Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active for #{0} cycles, now restarting MotionUVC", _telegramLiveTickErrorCount));
@@ -2226,12 +2226,12 @@ namespace MotionUVC
                             if ( _motionsList.Count > 2 ) {
 
                                 // calc time differences: last to 3rd to last, last to penultimate, penultimate to 3rd to last
-                                double lastToThrd = _motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].motionDateTime.TimeOfDay.TotalSeconds;
-                                double lastToPenu = _motionsList[_motionsList.Count - 1].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 2].motionDateTime.TimeOfDay.TotalSeconds;
-                                double penuToThrd = _motionsList[_motionsList.Count - 2].motionDateTime.TimeOfDay.TotalSeconds - _motionsList[_motionsList.Count - 3].motionDateTime.TimeOfDay.TotalSeconds;
+                                TimeSpan lastToThrd = _motionsList[_motionsList.Count - 1].motionDateTime - _motionsList[_motionsList.Count - 3].motionDateTime;
+                                TimeSpan lastToPenu = _motionsList[_motionsList.Count - 1].motionDateTime - _motionsList[_motionsList.Count - 2].motionDateTime;
+                                TimeSpan penuToThrd = _motionsList[_motionsList.Count - 2].motionDateTime - _motionsList[_motionsList.Count - 3].motionDateTime;
                                 
                                 // check if the current motion happened within certain time intervals to previous motions --> 'sequence'
-                                if ( (lastToThrd < 2.5f) || ((lastToPenu < 1.5f) && (penuToThrd < 1.5f)) ) {
+                                if ( (lastToThrd.TotalSeconds < 2.5f) || ((lastToPenu.TotalSeconds < 1.5f) && (penuToThrd.TotalSeconds < 1.5f)) ) {
 
                                     // make the last three motions consecutive
                                     _motionsList[_motionsList.Count - 3].motionConsecutive = true;
