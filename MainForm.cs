@@ -2066,7 +2066,7 @@ namespace MotionUVC
                     //  get the average gray value of the current tile
                     byte avgGrayCurr = Bmp24bppToGreenAverage(currTile);
                     // day / night flag
-                    itsDarkOutside = (bool)(avgGrayCurr < 50);
+                    itsDarkOutside = (bool)(avgGrayCurr < Settings.NightThreshold);
                     // app could adjust camera exposure time by itself (fixes camera OV5640 with IR lens: sometimes tends to brightness jumps if ambient is very bright)
                     if ( Settings.ExposureByApp ) {
                         // store it in a buffer for further inspection
@@ -2997,6 +2997,10 @@ namespace MotionUVC
         [CategoryAttribute("Motion Save Strategy")]
         [ReadOnly(false)]
         public Boolean DetectMotion { get; set; }
+        [Description("Pixel threshold value for darkness (saves non consecutive motions at night time, 0 = OFF)")]
+        [CategoryAttribute("Motion Save Strategy")]
+        [ReadOnly(false)]
+        public int NightThreshold { get; set; }
         [CategoryAttribute("Motion Save Strategy")]
         [Description("Start making video, after closing the Settings dialog")]
         [Editor(typeof(ActionButtonVideoEditor), typeof(System.Drawing.Design.UITypeEditor))]
@@ -3143,6 +3147,10 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "DetectMotion", "False"), out tmpBool) ) {
                 DetectMotion = tmpBool;
             }
+            // define darkness
+            if ( int.TryParse(ini.IniReadValue(iniSection, "NightThreshold", "30"), out tmpInt) ) {
+                NightThreshold = tmpInt;
+            }
             // minimize app while motion detection
             if ( bool.TryParse(ini.IniReadValue(iniSection, "MinimizeApp", "True"), out tmpBool) ) {
                 MinimizeApp = tmpBool;
@@ -3264,6 +3272,8 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString());
             // auto detect motion at app start
             ini.IniWriteValue(iniSection, "DetectMotion", DetectMotion.ToString());
+            // define darkness
+            ini.IniWriteValue(iniSection, "NightThreshold", NightThreshold.ToString());
             // minimize app while motion detection
             ini.IniWriteValue(iniSection, "MinimizeApp", MinimizeApp.ToString());
             // make daily motion video
