@@ -1848,7 +1848,7 @@ namespace MotionUVC
 
                     // process image
                     excStep = 6;
-                    if ( detectMotion(_currFrame, _prevFrame) ) {
+                    if ( detectMotion(now, _currFrame, _prevFrame) ) {
                         _motionsDetected++;
                     }
 
@@ -2025,7 +2025,7 @@ namespace MotionUVC
         //
         // motion detector process image method
         //
-        bool detectMotion(Bitmap currFrame, Bitmap prevFrame) {
+        bool detectMotion(DateTime nowFile, Bitmap currFrame, Bitmap prevFrame) {
 
             // camera running w/o motion detection
             if ( !Settings.DetectMotion ) {
@@ -2132,20 +2132,18 @@ namespace MotionUVC
                 ImageWebServer.Image = (Settings.WebserverImage == AppSettings.WebserverImageType.PROCESS) ? (Bitmap)_procFrame.Clone() : (Bitmap)_currFrame.Clone();
             }
 
-            // save motions needs useful names based on timestamps
-            DateTime nowFile = DateTime.Now;
-            DateTime nowPath = DateTime.Now;
-            string nowStringFile = nowFile.ToString("yyyy-MM-dd-HH-mm-ss_fff", CultureInfo.InvariantCulture);
-            string nowStringPath = nowPath.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
-            // if video will be generated, images captured between 19:00 ... 24:00 will be saved into the next day's folder
+            // if video will be generated, images captured between 19:00 ... 24:00 will be saved into the next day's folder --> adjust pathname
+            DateTime nowPath = nowFile;
             if ( Settings.MakeDailyVideo ) {
                 if ( DateTime.Now.TimeOfDay >= new System.TimeSpan(19, 0, 0) ) {
                     // jump one day forward
                     nowPath = nowPath.AddDays(1);
-                    nowStringPath = nowPath.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
                 }
             }
+
+            // save motions needs useful filename & pathname based on timestamp
+            string nowStringFile = nowFile.ToString("yyyy-MM-dd-HH-mm-ss_fff", CultureInfo.InvariantCulture);
+            string nowStringPath = nowPath.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
             // false positive handling
             if ( falsePositive ) {
