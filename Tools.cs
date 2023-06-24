@@ -36,6 +36,61 @@ namespace GrzTools
         public static void logText(string logtxt) {
             logTextToFile(logtxt);
         }
+        // log motions list entry
+        public static void logMotionListEntry(int motionIndex, bool bmpExists, bool motionConsecutive, DateTime motionTime, bool motionSaved) {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            while ( _busy ) {
+                Application.DoEvents();
+                if ( sw.ElapsedMilliseconds > 1000 ) {
+                    sw.Stop();
+                    return;
+                }
+            }
+            sw.Stop();
+            _busy = true;
+            try {
+                if ( FullFileNameBase.Length == 0 ) {
+                    FullFileNameBase = Application.ExecutablePath;
+                }
+                string logFileName = FullFileNameBase + DateTime.Now.ToString("_yyyyMMdd", CultureInfo.InvariantCulture) + ".motions";
+                System.IO.StreamWriter lsw = System.IO.File.AppendText(logFileName);
+                if ( new FileInfo(logFileName).Length == 0 ) {
+                    lsw.Write("ndx\tbmpEx.\tconsec.\ttimestamp\t\tbmpSaved\n");
+                }
+                string text = String.Format("{0}\t{1}\t{2}\t{3}\t{4}", motionIndex, bmpExists, motionConsecutive, motionTime.ToString("HH:mm:ss_fff", CultureInfo.InvariantCulture), motionSaved);
+                lsw.Write(text + "\n");
+                lsw.Close();
+            } catch {; }
+            _busy = false;
+        }
+        // log motions list extra marker
+        public static void logMotionListExtra(string text) {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            while ( _busy ) {
+                Application.DoEvents();
+                if ( sw.ElapsedMilliseconds > 1000 ) {
+                    sw.Stop();
+                    return;
+                }
+            }
+            sw.Stop();
+            _busy = true;
+            try {
+                if ( FullFileNameBase.Length == 0 ) {
+                    FullFileNameBase = Application.ExecutablePath;
+                }
+                string logFileName = FullFileNameBase + DateTime.Now.ToString("_yyyyMMdd", CultureInfo.InvariantCulture) + ".motions";
+                System.IO.StreamWriter lsw = System.IO.File.AppendText(logFileName);
+                if ( new FileInfo(logFileName).Length == 0 ) {
+                    lsw.Write("ndx\tbmpEx.\tconsec.\ttimestamp\t\tbmpSaved\n");
+                }
+                lsw.Write(text + "\n");
+                lsw.Close();
+            } catch {; }
+            _busy = false;
+        }
         // private
         private static bool _writeLogOverrule = false;
         private static bool _busy = false;
