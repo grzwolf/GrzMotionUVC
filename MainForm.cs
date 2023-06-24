@@ -86,6 +86,8 @@ namespace MotionUVC
         bool _justConnected = false;                                         // just connected 
         double _fps = 0;                                                     // current frame rate 
         long _procMs = 0;                                                    // current process time
+        long _procMsMin = long.MaxValue;                                     // min process time
+        long _procMsMax = 0;                                                 // max process time
         Size _sizeBeforeResize;                                              // MainForm size before a change was made by User
 
         double BRIGHTNESS_CHANGE_THRESHOLD = 10.0f;                          // experimental: camera exposure control thru app  
@@ -605,7 +607,16 @@ namespace MotionUVC
                 if ( !Settings.WriteLogfile ) {
                     Settings.WriteLogfile = true;
                 }
-                Logger.logTextLnU(DateTime.Now, String.Format("motion detect count={0}/{1} process time={2}ms bot alive={3}", _motionsDetected, _consecutivesDetected, _procMs, (_Bot != null)));
+                Logger.logTextLnU(DateTime.Now, 
+                    String.Format("motion detect count: {0}/{1}\tprocess times ms (cur/ín/max): {2}/{3}/{4}\tbot alive={5}", 
+                    _motionsDetected, 
+                    _consecutivesDetected, 
+                    _procMs,
+                    _procMsMin,
+                    _procMsMax,
+                    (_Bot != null)));
+                _procMsMin = long.MaxValue;
+                _procMsMax = 0;
                 if ( !currentWriteLogStatus ) {
                     Settings.WriteLogfile = currentWriteLogStatus;
                 }
@@ -1903,6 +1914,8 @@ namespace MotionUVC
                     // get process time in ms
                     swFrameProcessing.Stop();
                     _procMs = swFrameProcessing.ElapsedMilliseconds;
+                    _procMsMin = _procMs < _procMsMin ? _procMs : _procMsMin;
+                    _procMsMax = _procMs > _procMsMax ? _procMs : _procMsMax;
 
                     // update title
                     headLine();
