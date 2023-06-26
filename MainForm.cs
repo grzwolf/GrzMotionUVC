@@ -88,6 +88,7 @@ namespace MotionUVC
         long _procMs = 0;                                                    // current process time
         long _procMsMin = long.MaxValue;                                     // min process time
         long _procMsMax = 0;                                                 // max process time
+        long _proc450Ms = 0;                                                 // count number of process time >450ms
         Size _sizeBeforeResize;                                              // MainForm size before a change was made by User
 
         double BRIGHTNESS_CHANGE_THRESHOLD = 10.0f;                          // experimental: camera exposure control thru app  
@@ -608,15 +609,17 @@ namespace MotionUVC
                     Settings.WriteLogfile = true;
                 }
                 Logger.logTextLnU(DateTime.Now, 
-                    String.Format("motion detect count: {0}/{1}\tprocess times ms (cur/ín/max): {2}/{3}/{4}\tbot alive={5}", 
+                    String.Format("motions [x] abs/seq: {0}/{1}\tprocess times [ms][x] curr/mín/max/>450: {2}/{3}/{4}/{5}\tbot alive={6}", 
                     _motionsDetected, 
                     _consecutivesDetected, 
                     _procMs,
                     _procMsMin,
                     _procMsMax,
+                    _proc450Ms,
                     (_Bot != null)));
                 _procMsMin = long.MaxValue;
                 _procMsMax = 0;
+                _proc450Ms = 0;
                 if ( !currentWriteLogStatus ) {
                     Settings.WriteLogfile = currentWriteLogStatus;
                 }
@@ -1914,8 +1917,18 @@ namespace MotionUVC
                     // get process time in ms
                     swFrameProcessing.Stop();
                     _procMs = swFrameProcessing.ElapsedMilliseconds;
-                    _procMsMin = _procMs < _procMsMin ? _procMs : _procMsMin;
-                    _procMsMax = _procMs > _procMsMax ? _procMs : _procMsMax;
+                    // calc some log statistics
+                    if ( _procMs > _procMsMax ) {
+                        _procMsMax = _procMs;
+                        if ( _procMs > 450 ) {
+                            _proc450Ms++;
+                            Logger.logTextLn(now, String.Format("_procTime={0}", _procMs));
+                        }
+                    } else {
+                        if ( _procMs < _procMsMin ) {
+                            _procMsMin = _procMs;
+                        }
+                    }
 
                     // update title
                     headLine();
@@ -2287,7 +2300,9 @@ namespace MotionUVC
                                     }
 
                                     // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
-                                    saveSequence();
+                                    Task.Run(() => {
+                                        saveSequence();
+                                    });
 
                                     // make a motion sequence video only in this specific case
                                     if ( _alarmSequence ) {
@@ -2296,7 +2311,8 @@ namespace MotionUVC
                                             // make a sub list containing the latest consecutive motions
                                             _alarmSequenceBusy = true;
                                             List<Motion> subList = new List<Motion>();
-                                            for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
+                                            int cnt = _motionsList.Count - 1;
+                                            for ( int i = cnt; i >= 0; i-- ) {
                                                 if ( _motionsList[i].motionConsecutive ) {
                                                     subList.Insert(0, _motionsList[i]);
                                                 } else {
@@ -2358,7 +2374,8 @@ namespace MotionUVC
         // supposed to save not yet saved motion images, if they are consecutive
         private void saveSequence() {
             // loop list
-            for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
+            int cnt = _motionsList.Count - 1;
+            for ( int i = cnt; i >= 0; i-- ) {
 
                 if ( Settings.DebugMotions ) {
                     Logger.logMotionListExtra(i.ToString() + " loop");
