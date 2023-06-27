@@ -566,7 +566,7 @@ namespace MotionUVC
                     if ( Settings.DebugMotions ) {
                         int i = _motionsList.Count - 1;
                         Motion m = _motionsList[i];
-                        Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                        Logger.logMotionListEntry("dummy", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                     }
                 } catch {;}
                 // only pick the latest consecutive motion index
@@ -669,7 +669,7 @@ namespace MotionUVC
                             // debug motion list: only log disposed images
                             if ( Settings.DebugMotions ) {
                                 Motion m = _motionsList[i];
-                                Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                Logger.logMotionListEntry("flowctl", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                             }
                         }
                         // lores images
@@ -2269,7 +2269,7 @@ namespace MotionUVC
                             if ( Settings.DebugMotions ) {
                                 int i = _motionsList.Count - 1;
                                 Motion m = _motionsList[i];
-                                Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                Logger.logMotionListEntry("detect", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                             }
 
                             // need to wait for at least 3 queued images to allow some time comparison between the list entries
@@ -2290,13 +2290,13 @@ namespace MotionUVC
                                     if ( Settings.DebugMotions ) {
                                         int i = _motionsList.Count - 3;
                                         Motion m = _motionsList[i];
-                                        Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                        Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                                         i = _motionsList.Count - 2;
                                         m = _motionsList[i];
-                                        Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                        Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                                         i = _motionsList.Count - 1;
                                         m = _motionsList[i];
-                                        Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                        Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                                     }
 
                                     // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
@@ -2329,13 +2329,13 @@ namespace MotionUVC
                                             if ( Settings.DebugMotions ) {
                                                 int i = _motionsList.Count - 1;
                                                 Motion m = _motionsList[i];
-                                                Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                                Logger.logMotionListEntry("alarm", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                                             }
                                             _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
                                             if ( Settings.DebugMotions ) {
                                                 int i = _motionsList.Count - 1;
                                                 Motion m = _motionsList[i];
-                                                Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                                Logger.logMotionListEntry("alarm", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                                             }
                                             // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy when done
                                             makeMotionSequence(subList, Settings.CameraResolution);
@@ -2377,10 +2377,6 @@ namespace MotionUVC
             int cnt = _motionsList.Count - 1;
             for ( int i = cnt; i >= 0; i-- ) {
 
-                if ( Settings.DebugMotions ) {
-                    Logger.logMotionListExtra(i.ToString() + " loop");
-                }
-
                 // debug non consecutive images
                 if ( Settings.DebugNonConsecutives ) {
                     if ( !_motionsList[i].motionConsecutive ) {
@@ -2411,7 +2407,7 @@ namespace MotionUVC
                             // debug motion list
                             if ( Settings.DebugMotions ) {
                                 Motion m = _motionsList[i];
-                                Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                Logger.logMotionListEntry("saved", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                             }
                             // save lores if existing
                             if ( _motionsList[i].imageProc != null ) {
@@ -2430,7 +2426,7 @@ namespace MotionUVC
                         // debug motion list
                         if ( Settings.DebugMotions ) {
                             Motion m = _motionsList[i];
-                            Logger.logMotionListEntry(i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                            Logger.logMotionListEntry("!save!", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                         }
                         // also delete processed image
                         if ( _motionsList[i].imageProc != null ) {
@@ -2439,9 +2435,6 @@ namespace MotionUVC
                         }
                     }
                 } else {
-                    if ( Settings.DebugMotions ) {
-                        Logger.logMotionListExtra(i.ToString() + " break");
-                    }
                     break;
                 }
             }
