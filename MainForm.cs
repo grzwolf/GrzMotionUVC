@@ -659,9 +659,10 @@ namespace MotionUVC
                     Logger.logMotionListExtra(String.Format("{0} cleanup start: {1}", DateTime.Now.ToString("HH-mm-ss_fff"), _motionsList.Count));
                 }
                 // clean up _motionList from leftover Bitmaps
+                DateTime now = DateTime.Now;
                 for ( int i=0; i < _motionsList.Count; i++ ) {
                     // ignore all entries younger than 60s: TBD ?? what if a sequence is longer than 60s ??
-                    if ( (DateTime.Now - _motionsList[i].motionDateTime).TotalSeconds > 60 ) {
+                    if ( (now - _motionsList[i].motionDateTime).TotalSeconds > 60 ) {
                         // release hires images
                         if ( _motionsList[i].imageMotion != null ) {
                             _motionsList[i].imageMotion.Dispose();
