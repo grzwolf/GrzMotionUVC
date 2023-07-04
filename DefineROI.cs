@@ -96,6 +96,18 @@ namespace MotionUVC {
             this.pictureBox.Invalidate();
             this.pictureBox.Update();
         }
+        private void textBoxThresholdUpperLimit_TextChanged(object sender, EventArgs e) {
+            double tmp = double.Parse(this.textBoxThresholdUpperLimit.Text);
+            if ( tmp > 100 ) {
+                this.textBoxThresholdUpperLimit.Text = "100.0";
+            }
+            if ( tmp < 0 ) {
+                this.textBoxThresholdUpperLimit.Text = "0.0";
+            }
+            dirtyFlag = true;
+            this.pictureBox.Invalidate();
+            this.pictureBox.Update();
+        }
         private void numericUpDownBoxScaler_ValueChanged(object sender, EventArgs e) {
             dirtyFlag = true;
             this.pictureBox.Invalidate();
@@ -112,8 +124,9 @@ namespace MotionUVC {
             ROIsList[currListNdx].rect = new Rectangle((int)this.numericUpDownPosX.Value, (int)this.numericUpDownPosY.Value, (int)this.numericUpDownWidthX.Value, (int)this.numericUpDownHeightY.Value);
             // new ROI intensity
             ROIsList[currListNdx].thresholdIntensity = (int)this.numericUpDownIntensity.Value;
-            // new ROI percentage
+            // new ROI percentages: threshold + upper limit
             ROIsList[currListNdx].thresholdChanges = double.Parse(this.textBoxThreshold.Text, System.Globalization.CultureInfo.InvariantCulture) / 100.0f;
+            ROIsList[currListNdx].thresholdUpperLimit = double.Parse(this.textBoxThresholdUpperLimit.Text, System.Globalization.CultureInfo.InvariantCulture) / 100.0f;
             // new ROI scaler
             ROIsList[currListNdx].boxScaler = (int)this.numericUpDownBoxScaler.Value;
             // only if reference status was changed at all
@@ -144,6 +157,7 @@ namespace MotionUVC {
             ROIsList[currListNdx].rect = new Rectangle();
             ROIsList[currListNdx].thresholdIntensity = 15;
             ROIsList[currListNdx].thresholdChanges = 0.05f;
+            ROIsList[currListNdx].thresholdUpperLimit = 1.0f;
             ROIsList[currListNdx].boxScaler = 1;
             ROIsList[currListNdx].reference = false;
             int fstRoiNdx = -1;
@@ -209,6 +223,7 @@ namespace MotionUVC {
                 ROIsList[newRoiNdx].rect = currRect;
                 ROIsList[newRoiNdx].thresholdIntensity = 15;
                 ROIsList[newRoiNdx].thresholdChanges = 0.05f;
+                ROIsList[newRoiNdx].thresholdUpperLimit = 1.0f;
                 ROIsList[newRoiNdx].boxScaler = 1;
                 ROIsList[newRoiNdx].reference = false;
                 currListNdx = newRoiNdx;
@@ -242,6 +257,7 @@ namespace MotionUVC {
                     ROIsList[0].rect = currRect;
                     ROIsList[0].thresholdIntensity = 15;
                     ROIsList[0].thresholdChanges = 0.05f;
+                    ROIsList[0].thresholdUpperLimit = 1.0f;
                     ROIsList[0].boxScaler = 1;
                     ROIsList[0].reference = false;
                     break;
@@ -267,6 +283,7 @@ namespace MotionUVC {
                     ROIsList[0].rect = currRect;
                     ROIsList[0].thresholdIntensity = 15;
                     ROIsList[0].thresholdChanges = 0.05f;
+                    ROIsList[0].thresholdUpperLimit = 1.0f;
                     ROIsList[0].boxScaler = 1;
                     ROIsList[0].reference = false;
                     break;
@@ -306,6 +323,7 @@ namespace MotionUVC {
                             // update other params
                             this.numericUpDownIntensity.Value = ROIsList[i].thresholdIntensity;
                             this.textBoxThreshold.Text = (ROIsList[i].thresholdChanges * 100.0f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+                            this.textBoxThresholdUpperLimit.Text = (ROIsList[i].thresholdUpperLimit * 100.0f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
                             this.numericUpDownBoxScaler.Value = ROIsList[i].boxScaler;
                             this.checkBoxReferenceROI.Checked = ROIsList[i].reference;
                             // intentional set to false: because some input controls were updated, what sets dirtyFlag to true - but here we are only scrolling thru ROIs !! not changing them !!

@@ -33,6 +33,7 @@ namespace MotionUVC
             public Rectangle rect { get; set; }                              // monitor area  
             public int thresholdIntensity { get; set; }                      // pixel gray value threshold considered as a potential motion
             public double thresholdChanges { get; set; }                     // percentage of pixels in a ROI considered as a potential motion
+            public double thresholdUpperLimit { get; set; }                  // if percentage of pixels in a ROI is exceeded, it's considered false positive
             public bool reference { get; set; }                              // reference ROI to exclude false positive motions
             public int boxScaler { get; set; }                               // consecutive pixels in a box   
         };
@@ -116,6 +117,8 @@ namespace MotionUVC
         long ONE_GB =  1000000000;                                            // constants for file delete  
         long TWO_GB =  2000000000;                                            
         long TEN_GB = 10000000000;
+
+        Font _pctFont = new Font("Arial", 15, FontStyle.Bold, GraphicsUnit.Pixel);
 
         // the one and only way to avoid the 'red cross exception' in pictureBox: "wrong parameter" 
         public class PictureBoxPlus : PictureBox {
@@ -2024,7 +2027,7 @@ namespace MotionUVC
         }
 
         // write boxed (boxDim x boxDim) gray byte array into a larger 24bppRgb color bmp as overlay
-        public unsafe Bitmap ScaledBoxGray8bppByteArrayToBmp24bppOverlay(Bitmap ori, Rectangle rcDest, byte[] arr, int boxDim, bool motionDetected) {
+        public unsafe Bitmap ScaledBoxGray8bppByteArrayToBmp24bppOverlay(Bitmap ori, Rectangle rcDest, byte[] arr, int boxDim, bool motionInRectDetected) {
             // box dimension constraints
             int arrHeight = rcDest.Height / boxDim;
             int arrWidth = rcDest.Width / boxDim;
@@ -2052,7 +2055,7 @@ namespace MotionUVC
                     int gray = arr[arrNdxFin];
                     // 255 is an indication for a _roi[i].thresholdIntensity exceed
                     if ( gray == 255 ) {
-                        if ( motionDetected ) {
+                        if ( motionInRectDetected ) {
                             // set Pixel in rcDest to transparent red
                             scan0[scanOfsY + x + 2] = 255;
                         } else {
@@ -2147,12 +2150,16 @@ namespace MotionUVC
                 currentPixelsChanged *= (_roi[i].boxScaler * _roi[i].boxScaler);
                 currentPixelsChanged /= numberOfPixels;
 
-                // if the change is a motion
+                // pixel change is a potential motion
                 if ( currentPixelsChanged > _roi[i].thresholdChanges ) {
                     // motion detected inside active ROI
                     motionDetectedInRoi = true;
                     // return value indicates, a motion took place
                     motionDetected = true;
+                    // false positive motion, if pixel change upper limit threshold is exceeded
+                    if ( currentPixelsChanged >= _roi[i].thresholdUpperLimit ) {
+                        falsePositive = true;
+                    }
                     // false positive motion, if reference ROI detects a motion
                     if ( _roi[i].reference ) {
                         falsePositive = true;
@@ -2162,9 +2169,13 @@ namespace MotionUVC
                 // draw bufResu into _procFrame, which is shown in UI
                 _procFrame = ScaledBoxGray8bppByteArrayToBmp24bppOverlay(_procFrame, _roi[i].rect, bufResu, _roi[i].boxScaler, motionDetectedInRoi);
 
-                // show the currently affected ROI
+                // show the currently affected ROI + pixel change percentage
                 using ( Graphics g = Graphics.FromImage(_procFrame) ) {
                     g.DrawRectangle(_roi[i].reference ? new Pen(Color.Yellow) : new Pen(Color.Red), _roi[i].rect);
+                    if ( Settings.ShowPixelChangePercent ) {
+                        g.FillRectangle(Brushes.Yellow, _roi[i].rect.X, _roi[i].rect.Y, 30, 17);
+                        g.DrawString(String.Format("{0}%", (int)(currentPixelsChanged * 100.0f)), _pctFont, Brushes.Black, _roi[i].rect.X, _roi[i].rect.Y);
+                    }
                 }
 
                 // release the two Bitmap tiles
@@ -3060,6 +3071,10 @@ namespace MotionUVC
         [ReadOnly(false)]
         public Boolean WriteLogfile { get; set; }
 
+        [Description("Show pixel change percentage in live view")]
+        [CategoryAttribute("Debugging")]
+        [ReadOnly(false)]
+        public Boolean ShowPixelChangePercent { get; set; }
         [Description("Save processed images, useful for debug purposes")]
         [CategoryAttribute("Debugging")]
         [ReadOnly(false)]
@@ -3215,6 +3230,10 @@ namespace MotionUVC
             if ( int.TryParse(ini.IniReadValue(iniSection, "FormY", "10"), out tmpInt) ) {
                 FormLocation = new Point(FormLocation.X, Math.Min(Math.Max(0, tmpInt), 400));
             }
+            // show pixel change percentage
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "ShowPixelChangePercent", "False"), out tmpBool) ) {
+                ShowPixelChangePercent = tmpBool;
+            }
             // debug image processing  
             if ( bool.TryParse(ini.IniReadValue(iniSection, "DebugProc", "False"), out tmpBool) ) {
                 DebugProcessImages = tmpBool;
@@ -3316,10 +3335,29 @@ namespace MotionUVC
             // hint to edit ROIs
             EditROIs = "Click, then click again the right hand side '...' button to edit ROIs";
             // set all ROIs in PropertyGrid array
-            ListROIs = new string[] { "", "", "", "", "", "", "", "", "", "" };
+            bool asapSaveRoisToIni = false;
+            ListROIs = new string[] { "", "", "", "", "", "", "", "", "", ""};
             for ( int i = 0; i < MainForm.ROICOUNT; i++ ) {
-                string strROI = ini.IniReadValue("ROI section", "roi" + i.ToString(), "0,0,0,0,0,0.0,False,1");
+                // normal read from ini
+                string strROI = ini.IniReadValue("ROI section", "roi" + i.ToString(), "0,0,0,0,0,0.0,0.0,False,1");
+                //
+                // app UPDATE <= 1.0.0.2 --> >= 1.0.0.3 "add threshold upper limit" changes ROI structure
+                //
+                // supposed to happen once, when first time using the 9 elements ROI 
+                string[] arr = strROI.Split(',');
+                if ( arr.Length == 8 ) {
+                    asapSaveRoisToIni = true;
+                    strROI = String.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8}", arr[0], arr[1], arr[2], arr[3], arr[4], arr[5], "1.0", arr[6], arr[7]);
+                }
+                // build list of ROI
                 ListROIs[i] = strROI;
+            }
+            // for the sake of mind, save ROIs to INI asap
+            if ( asapSaveRoisToIni ) {
+                // write ROIs from PropertyGrid array to INI
+                for ( int i = 0; i < MainForm.ROICOUNT; i++ ) {
+                    ini.IniWriteValue("ROI section", "roi" + i.ToString(), ListROIs[i]);
+                }
             }
             // how to use a Telegram bot
             HowToUseTelegram = "https://core.telegram.org/bots#creating-a-new-bot\\";
@@ -3356,6 +3394,8 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "FormX", FormLocation.X.ToString());
             // form height
             ini.IniWriteValue(iniSection, "FormY", FormLocation.Y.ToString());
+            // show pixel change percentage
+            ini.IniWriteValue(iniSection, "ShowPixelChangePercent", ShowPixelChangePercent.ToString());
             // debug image processing
             ini.IniWriteValue(iniSection, "DebugProc", DebugProcessImages.ToString());
             // debug false positive images
@@ -3417,8 +3457,10 @@ namespace MotionUVC
                 double outVal;
                 double.TryParse(arr[5], NumberStyles.Any, CultureInfo.InvariantCulture, out outVal);
                 list[i].thresholdChanges = outVal;
-                list[i].reference = bool.Parse(arr[6]);
-                list[i].boxScaler = int.Parse(arr[7]);
+                double.TryParse(arr[6], NumberStyles.Any, CultureInfo.InvariantCulture, out outVal);
+                list[i].thresholdUpperLimit = outVal;
+                list[i].reference = bool.Parse(arr[7]);
+                list[i].boxScaler = int.Parse(arr[8]);
             }
             return list;
         }
@@ -3436,6 +3478,7 @@ namespace MotionUVC
                     list[i].rect.Height.ToString() + "," +
                     list[i].thresholdIntensity.ToString() + "," +
                     list[i].thresholdChanges.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture) + "," +
+                    list[i].thresholdUpperLimit.ToString("0.0000", System.Globalization.CultureInfo.InvariantCulture) + "," +
                     list[i].reference.ToString() + "," +
                     list[i].boxScaler.ToString();
             }

@@ -26,8 +26,9 @@ namespace MotionUVC {
         private void InitializeComponent() {
             this.components = new System.ComponentModel.Container();
             this.tableLayoutPanelMain = new System.Windows.Forms.TableLayoutPanel();
-            this.label14 = new System.Windows.Forms.Label();
-            this.label13 = new System.Windows.Forms.Label();
+            this.label16 = new System.Windows.Forms.Label();
+            this.textBoxThresholdUpperLimit = new System.Windows.Forms.TextBox();
+            this.label15 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
             this.label11 = new System.Windows.Forms.Label();
             this.buttonDeleteROI = new System.Windows.Forms.Button();
@@ -36,8 +37,6 @@ namespace MotionUVC {
             this.numericUpDownWidthX = new System.Windows.Forms.NumericUpDown();
             this.pictureBox = new System.Windows.Forms.PictureBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.checkBoxReferenceROI = new System.Windows.Forms.CheckBox();
-            this.label6 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -45,19 +44,23 @@ namespace MotionUVC {
             this.numericUpDownPosY = new System.Windows.Forms.NumericUpDown();
             this.numericUpDownPosX = new System.Windows.Forms.NumericUpDown();
             this.label7 = new System.Windows.Forms.Label();
-            this.label8 = new System.Windows.Forms.Label();
-            this.buttonPrevROI = new System.Windows.Forms.Button();
-            this.buttonNextROI = new System.Windows.Forms.Button();
-            this.buttonApply = new System.Windows.Forms.Button();
-            this.buttonReset = new System.Windows.Forms.Button();
-            this.label9 = new System.Windows.Forms.Label();
             this.numericUpDownIntensity = new System.Windows.Forms.NumericUpDown();
             this.textBoxThreshold = new System.Windows.Forms.TextBox();
-            this.numericUpDownBoxScaler = new System.Windows.Forms.NumericUpDown();
             this.label10 = new System.Windows.Forms.Label();
             this.buttonOk = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.buttonAddROI = new System.Windows.Forms.Button();
+            this.label9 = new System.Windows.Forms.Label();
+            this.buttonApply = new System.Windows.Forms.Button();
+            this.buttonReset = new System.Windows.Forms.Button();
+            this.buttonNextROI = new System.Windows.Forms.Button();
+            this.buttonPrevROI = new System.Windows.Forms.Button();
+            this.label8 = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
+            this.checkBoxReferenceROI = new System.Windows.Forms.CheckBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.numericUpDownBoxScaler = new System.Windows.Forms.NumericUpDown();
+            this.label13 = new System.Windows.Forms.Label();
             this.toolTipDrawRectangle = new System.Windows.Forms.ToolTip(this.components);
             this.tableLayoutPanelMain.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownHeightY)).BeginInit();
@@ -76,8 +79,9 @@ namespace MotionUVC {
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 59.01287F));
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20.49356F));
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20.49356F));
-            this.tableLayoutPanelMain.Controls.Add(this.label14, 0, 7);
-            this.tableLayoutPanelMain.Controls.Add(this.label13, 3, 6);
+            this.tableLayoutPanelMain.Controls.Add(this.label16, 3, 6);
+            this.tableLayoutPanelMain.Controls.Add(this.textBoxThresholdUpperLimit, 2, 6);
+            this.tableLayoutPanelMain.Controls.Add(this.label15, 1, 6);
             this.tableLayoutPanelMain.Controls.Add(this.label12, 3, 4);
             this.tableLayoutPanelMain.Controls.Add(this.label11, 3, 5);
             this.tableLayoutPanelMain.Controls.Add(this.buttonDeleteROI, 3, 1);
@@ -86,8 +90,6 @@ namespace MotionUVC {
             this.tableLayoutPanelMain.Controls.Add(this.numericUpDownWidthX, 3, 2);
             this.tableLayoutPanelMain.Controls.Add(this.pictureBox, 0, 0);
             this.tableLayoutPanelMain.Controls.Add(this.label1, 1, 0);
-            this.tableLayoutPanelMain.Controls.Add(this.checkBoxReferenceROI, 2, 7);
-            this.tableLayoutPanelMain.Controls.Add(this.label6, 1, 6);
             this.tableLayoutPanelMain.Controls.Add(this.label5, 1, 5);
             this.tableLayoutPanelMain.Controls.Add(this.label4, 1, 4);
             this.tableLayoutPanelMain.Controls.Add(this.label3, 1, 3);
@@ -95,26 +97,31 @@ namespace MotionUVC {
             this.tableLayoutPanelMain.Controls.Add(this.numericUpDownPosY, 2, 3);
             this.tableLayoutPanelMain.Controls.Add(this.numericUpDownPosX, 2, 2);
             this.tableLayoutPanelMain.Controls.Add(this.label7, 1, 1);
-            this.tableLayoutPanelMain.Controls.Add(this.label8, 1, 8);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonPrevROI, 2, 8);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonNextROI, 3, 8);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonApply, 2, 9);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonReset, 3, 9);
-            this.tableLayoutPanelMain.Controls.Add(this.label9, 1, 9);
             this.tableLayoutPanelMain.Controls.Add(this.numericUpDownIntensity, 2, 4);
             this.tableLayoutPanelMain.Controls.Add(this.textBoxThreshold, 2, 5);
-            this.tableLayoutPanelMain.Controls.Add(this.numericUpDownBoxScaler, 2, 6);
-            this.tableLayoutPanelMain.Controls.Add(this.label10, 1, 11);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonOk, 2, 11);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonCancel, 3, 11);
-            this.tableLayoutPanelMain.Controls.Add(this.buttonAddROI, 1, 10);
+            this.tableLayoutPanelMain.Controls.Add(this.label10, 1, 12);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonOk, 2, 12);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonCancel, 3, 12);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonAddROI, 1, 11);
+            this.tableLayoutPanelMain.Controls.Add(this.label9, 1, 10);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonApply, 2, 10);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonReset, 3, 10);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonNextROI, 3, 9);
+            this.tableLayoutPanelMain.Controls.Add(this.buttonPrevROI, 2, 9);
+            this.tableLayoutPanelMain.Controls.Add(this.label8, 1, 9);
+            this.tableLayoutPanelMain.Controls.Add(this.label14, 1, 8);
+            this.tableLayoutPanelMain.Controls.Add(this.checkBoxReferenceROI, 2, 8);
+            this.tableLayoutPanelMain.Controls.Add(this.label6, 1, 7);
+            this.tableLayoutPanelMain.Controls.Add(this.numericUpDownBoxScaler, 2, 7);
+            this.tableLayoutPanelMain.Controls.Add(this.label13, 3, 7);
             this.tableLayoutPanelMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanelMain.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanelMain.Margin = new System.Windows.Forms.Padding(0);
             this.tableLayoutPanelMain.MaximumSize = new System.Drawing.Size(0, 600);
             this.tableLayoutPanelMain.MinimumSize = new System.Drawing.Size(0, 600);
             this.tableLayoutPanelMain.Name = "tableLayoutPanelMain";
-            this.tableLayoutPanelMain.RowCount = 12;
+            this.tableLayoutPanelMain.RowCount = 13;
+            this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
@@ -127,33 +134,46 @@ namespace MotionUVC {
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanelMain.Size = new System.Drawing.Size(1184, 600);
             this.tableLayoutPanelMain.TabIndex = 0;
             // 
-            // label14
+            // label16
             // 
-            this.label14.AutoSize = true;
-            this.label14.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label14.Location = new System.Drawing.Point(805, 280);
-            this.label14.Name = "label14";
-            this.label14.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.label14.Size = new System.Drawing.Size(172, 28);
-            this.label14.TabIndex = 32;
-            this.label14.Text = "Active ROI is reference";
-            this.label14.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.label16.AutoSize = true;
+            this.label16.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label16.Location = new System.Drawing.Point(1108, 240);
+            this.label16.Name = "label16";
+            this.label16.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label16.Size = new System.Drawing.Size(23, 28);
+            this.label16.TabIndex = 35;
+            this.label16.Text = "%";
+            this.label16.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // label13
+            // textBoxThresholdUpperLimit
             // 
-            this.label13.AutoSize = true;
-            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label13.Location = new System.Drawing.Point(1108, 240);
-            this.label13.Name = "label13";
-            this.label13.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.label13.Size = new System.Drawing.Size(64, 28);
-            this.label13.TabIndex = 31;
-            this.label13.Text = "[1 ... 32]";
-            this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.textBoxThresholdUpperLimit.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.textBoxThresholdUpperLimit.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBoxThresholdUpperLimit.Location = new System.Drawing.Point(1030, 246);
+            this.textBoxThresholdUpperLimit.Margin = new System.Windows.Forms.Padding(3, 6, 3, 3);
+            this.textBoxThresholdUpperLimit.MaxLength = 6;
+            this.textBoxThresholdUpperLimit.Name = "textBoxThresholdUpperLimit";
+            this.textBoxThresholdUpperLimit.Size = new System.Drawing.Size(72, 26);
+            this.textBoxThresholdUpperLimit.TabIndex = 34;
+            this.textBoxThresholdUpperLimit.TextChanged += new System.EventHandler(this.textBoxThresholdUpperLimit_TextChanged);
+            // 
+            // label15
+            // 
+            this.label15.AutoSize = true;
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label15.Location = new System.Drawing.Point(805, 240);
+            this.label15.Name = "label15";
+            this.label15.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label15.Size = new System.Drawing.Size(213, 28);
+            this.label15.TabIndex = 33;
+            this.label15.Text = "Pixel change count maximum";
+            this.label15.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // label12
             // 
@@ -262,7 +282,7 @@ namespace MotionUVC {
             this.pictureBox.Location = new System.Drawing.Point(0, 0);
             this.pictureBox.Margin = new System.Windows.Forms.Padding(0);
             this.pictureBox.Name = "pictureBox";
-            this.tableLayoutPanelMain.SetRowSpan(this.pictureBox, 12);
+            this.tableLayoutPanelMain.SetRowSpan(this.pictureBox, 13);
             this.pictureBox.Size = new System.Drawing.Size(802, 600);
             this.pictureBox.TabIndex = 0;
             this.pictureBox.TabStop = false;
@@ -283,30 +303,6 @@ namespace MotionUVC {
             this.label1.TabIndex = 1;
             this.label1.Text = "Setup motion detection parameters";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // checkBoxReferenceROI
-            // 
-            this.checkBoxReferenceROI.AutoSize = true;
-            this.checkBoxReferenceROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.checkBoxReferenceROI.Location = new System.Drawing.Point(1030, 283);
-            this.checkBoxReferenceROI.Name = "checkBoxReferenceROI";
-            this.checkBoxReferenceROI.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.checkBoxReferenceROI.Size = new System.Drawing.Size(15, 22);
-            this.checkBoxReferenceROI.TabIndex = 12;
-            this.checkBoxReferenceROI.UseVisualStyleBackColor = true;
-            this.checkBoxReferenceROI.CheckedChanged += new System.EventHandler(this.checkBoxReferenceROI_CheckedChanged);
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(805, 240);
-            this.label6.Name = "label6";
-            this.label6.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.label6.Size = new System.Drawing.Size(116, 28);
-            this.label6.TabIndex = 11;
-            this.label6.Text = "Pixel box scaler";
-            this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // label5
             // 
@@ -404,84 +400,6 @@ namespace MotionUVC {
             this.label7.Text = "Active ROI index";
             this.label7.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
-            // label8
-            // 
-            this.label8.AutoSize = true;
-            this.label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label8.Location = new System.Drawing.Point(805, 320);
-            this.label8.Name = "label8";
-            this.label8.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.label8.Size = new System.Drawing.Size(133, 28);
-            this.label8.TabIndex = 15;
-            this.label8.Text = "Active ROI switch";
-            this.label8.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // buttonPrevROI
-            // 
-            this.buttonPrevROI.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonPrevROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonPrevROI.Location = new System.Drawing.Point(1030, 323);
-            this.buttonPrevROI.Name = "buttonPrevROI";
-            this.buttonPrevROI.Size = new System.Drawing.Size(72, 34);
-            this.buttonPrevROI.TabIndex = 16;
-            this.buttonPrevROI.Text = "<";
-            this.buttonPrevROI.UseVisualStyleBackColor = true;
-            this.buttonPrevROI.Click += new System.EventHandler(this.buttonPrevROI_Click);
-            // 
-            // buttonNextROI
-            // 
-            this.buttonNextROI.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonNextROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonNextROI.Location = new System.Drawing.Point(1108, 323);
-            this.buttonNextROI.Name = "buttonNextROI";
-            this.buttonNextROI.Size = new System.Drawing.Size(73, 34);
-            this.buttonNextROI.TabIndex = 17;
-            this.buttonNextROI.Text = ">";
-            this.buttonNextROI.UseVisualStyleBackColor = true;
-            this.buttonNextROI.Click += new System.EventHandler(this.buttonNextROI_Click);
-            // 
-            // buttonApply
-            // 
-            this.buttonApply.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonApply.Enabled = false;
-            this.buttonApply.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonApply.Location = new System.Drawing.Point(1030, 363);
-            this.buttonApply.Name = "buttonApply";
-            this.buttonApply.Size = new System.Drawing.Size(72, 34);
-            this.buttonApply.TabIndex = 18;
-            this.buttonApply.Text = "apply";
-            this.buttonApply.UseVisualStyleBackColor = true;
-            this.buttonApply.Click += new System.EventHandler(this.buttonApply_Click);
-            // 
-            // buttonReset
-            // 
-            this.buttonReset.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonReset.Enabled = false;
-            this.buttonReset.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonReset.Location = new System.Drawing.Point(1108, 363);
-            this.buttonReset.Name = "buttonReset";
-            this.buttonReset.Size = new System.Drawing.Size(73, 34);
-            this.buttonReset.TabIndex = 19;
-            this.buttonReset.Text = "reset";
-            this.buttonReset.UseVisualStyleBackColor = true;
-            this.buttonReset.Click += new System.EventHandler(this.buttonReset_Click);
-            // 
-            // label9
-            // 
-            this.label9.AutoSize = true;
-            this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label9.Location = new System.Drawing.Point(805, 360);
-            this.label9.Name = "label9";
-            this.label9.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
-            this.label9.Size = new System.Drawing.Size(150, 28);
-            this.label9.TabIndex = 20;
-            this.label9.Text = "Active ROI changes";
-            this.label9.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
             // numericUpDownIntensity
             // 
             this.numericUpDownIntensity.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -513,34 +431,6 @@ namespace MotionUVC {
             this.textBoxThreshold.Size = new System.Drawing.Size(72, 26);
             this.textBoxThreshold.TabIndex = 25;
             this.textBoxThreshold.TextChanged += new System.EventHandler(this.textBoxThreshold_TextChanged);
-            // 
-            // numericUpDownBoxScaler
-            // 
-            this.numericUpDownBoxScaler.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.numericUpDownBoxScaler.AutoSize = true;
-            this.numericUpDownBoxScaler.Font = new System.Drawing.Font("Microsoft Sans Serif", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.numericUpDownBoxScaler.Location = new System.Drawing.Point(1030, 243);
-            this.numericUpDownBoxScaler.Maximum = new decimal(new int[] {
-            32,
-            0,
-            0,
-            0});
-            this.numericUpDownBoxScaler.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.numericUpDownBoxScaler.Name = "numericUpDownBoxScaler";
-            this.numericUpDownBoxScaler.Size = new System.Drawing.Size(72, 30);
-            this.numericUpDownBoxScaler.TabIndex = 26;
-            this.numericUpDownBoxScaler.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.numericUpDownBoxScaler.ValueChanged += new System.EventHandler(this.numericUpDownBoxScaler_ValueChanged);
             // 
             // label10
             // 
@@ -584,7 +474,7 @@ namespace MotionUVC {
             // buttonAddROI
             // 
             this.buttonAddROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.buttonAddROI.Location = new System.Drawing.Point(805, 403);
+            this.buttonAddROI.Location = new System.Drawing.Point(805, 443);
             this.buttonAddROI.Name = "buttonAddROI";
             this.buttonAddROI.Size = new System.Drawing.Size(112, 34);
             this.buttonAddROI.TabIndex = 27;
@@ -593,6 +483,160 @@ namespace MotionUVC {
             this.toolTipDrawRectangle.SetToolTip(this.buttonAddROI, "first draw a rectangle with the mouse ");
             this.buttonAddROI.UseVisualStyleBackColor = true;
             this.buttonAddROI.Click += new System.EventHandler(this.buttonAddROI_Click);
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label9.Location = new System.Drawing.Point(805, 400);
+            this.label9.Name = "label9";
+            this.label9.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label9.Size = new System.Drawing.Size(150, 28);
+            this.label9.TabIndex = 20;
+            this.label9.Text = "Active ROI changes";
+            this.label9.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // buttonApply
+            // 
+            this.buttonApply.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonApply.Enabled = false;
+            this.buttonApply.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonApply.Location = new System.Drawing.Point(1030, 403);
+            this.buttonApply.Name = "buttonApply";
+            this.buttonApply.Size = new System.Drawing.Size(72, 34);
+            this.buttonApply.TabIndex = 18;
+            this.buttonApply.Text = "apply";
+            this.buttonApply.UseVisualStyleBackColor = true;
+            this.buttonApply.Click += new System.EventHandler(this.buttonApply_Click);
+            // 
+            // buttonReset
+            // 
+            this.buttonReset.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonReset.Enabled = false;
+            this.buttonReset.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonReset.Location = new System.Drawing.Point(1108, 403);
+            this.buttonReset.Name = "buttonReset";
+            this.buttonReset.Size = new System.Drawing.Size(73, 34);
+            this.buttonReset.TabIndex = 19;
+            this.buttonReset.Text = "reset";
+            this.buttonReset.UseVisualStyleBackColor = true;
+            this.buttonReset.Click += new System.EventHandler(this.buttonReset_Click);
+            // 
+            // buttonNextROI
+            // 
+            this.buttonNextROI.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonNextROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonNextROI.Location = new System.Drawing.Point(1108, 363);
+            this.buttonNextROI.Name = "buttonNextROI";
+            this.buttonNextROI.Size = new System.Drawing.Size(73, 34);
+            this.buttonNextROI.TabIndex = 17;
+            this.buttonNextROI.Text = ">";
+            this.buttonNextROI.UseVisualStyleBackColor = true;
+            this.buttonNextROI.Click += new System.EventHandler(this.buttonNextROI_Click);
+            // 
+            // buttonPrevROI
+            // 
+            this.buttonPrevROI.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonPrevROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.buttonPrevROI.Location = new System.Drawing.Point(1030, 363);
+            this.buttonPrevROI.Name = "buttonPrevROI";
+            this.buttonPrevROI.Size = new System.Drawing.Size(72, 34);
+            this.buttonPrevROI.TabIndex = 16;
+            this.buttonPrevROI.Text = "<";
+            this.buttonPrevROI.UseVisualStyleBackColor = true;
+            this.buttonPrevROI.Click += new System.EventHandler(this.buttonPrevROI_Click);
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label8.Location = new System.Drawing.Point(805, 360);
+            this.label8.Name = "label8";
+            this.label8.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label8.Size = new System.Drawing.Size(133, 28);
+            this.label8.TabIndex = 15;
+            this.label8.Text = "Active ROI switch";
+            this.label8.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label14.Location = new System.Drawing.Point(805, 320);
+            this.label14.Name = "label14";
+            this.label14.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label14.Size = new System.Drawing.Size(172, 28);
+            this.label14.TabIndex = 32;
+            this.label14.Text = "Active ROI is reference";
+            this.label14.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // checkBoxReferenceROI
+            // 
+            this.checkBoxReferenceROI.AutoSize = true;
+            this.checkBoxReferenceROI.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.checkBoxReferenceROI.Location = new System.Drawing.Point(1030, 323);
+            this.checkBoxReferenceROI.Name = "checkBoxReferenceROI";
+            this.checkBoxReferenceROI.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.checkBoxReferenceROI.Size = new System.Drawing.Size(15, 22);
+            this.checkBoxReferenceROI.TabIndex = 12;
+            this.checkBoxReferenceROI.UseVisualStyleBackColor = true;
+            this.checkBoxReferenceROI.CheckedChanged += new System.EventHandler(this.checkBoxReferenceROI_CheckedChanged);
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label6.Location = new System.Drawing.Point(805, 280);
+            this.label6.Name = "label6";
+            this.label6.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label6.Size = new System.Drawing.Size(116, 28);
+            this.label6.TabIndex = 11;
+            this.label6.Text = "Pixel box scaler";
+            this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // numericUpDownBoxScaler
+            // 
+            this.numericUpDownBoxScaler.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.numericUpDownBoxScaler.AutoSize = true;
+            this.numericUpDownBoxScaler.Font = new System.Drawing.Font("Microsoft Sans Serif", 15F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.numericUpDownBoxScaler.Location = new System.Drawing.Point(1030, 283);
+            this.numericUpDownBoxScaler.Maximum = new decimal(new int[] {
+            32,
+            0,
+            0,
+            0});
+            this.numericUpDownBoxScaler.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDownBoxScaler.Name = "numericUpDownBoxScaler";
+            this.numericUpDownBoxScaler.Size = new System.Drawing.Size(72, 30);
+            this.numericUpDownBoxScaler.TabIndex = 26;
+            this.numericUpDownBoxScaler.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDownBoxScaler.ValueChanged += new System.EventHandler(this.numericUpDownBoxScaler_ValueChanged);
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label13.Location = new System.Drawing.Point(1108, 280);
+            this.label13.Name = "label13";
+            this.label13.Padding = new System.Windows.Forms.Padding(0, 8, 0, 0);
+            this.label13.Size = new System.Drawing.Size(64, 28);
+            this.label13.TabIndex = 31;
+            this.label13.Text = "[1 ... 32]";
+            this.label13.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // DefineROI
             // 
@@ -655,5 +699,8 @@ namespace MotionUVC {
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.Label label16;
+        private System.Windows.Forms.TextBox textBoxThresholdUpperLimit;
+        private System.Windows.Forms.Label label15;
     }
 }
