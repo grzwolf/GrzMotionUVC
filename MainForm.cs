@@ -2705,6 +2705,9 @@ namespace MotionUVC
                 }
                 // INI: write settings to ini
                 Settings.writePropertyGridToIni();
+                // since app continues to run, update app's health flag
+                AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+                ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             } else {
                 Settings.CopyAllTo(oldSettings, out Settings);
             }
