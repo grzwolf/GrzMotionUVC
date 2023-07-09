@@ -2692,6 +2692,17 @@ namespace MotionUVC
                 Settings = dlg.Setting;
                 // update app settings
                 updateAppPropertiesFromSettings();
+                // backup ini
+                string src = System.Windows.Forms.Application.ExecutablePath + ".ini";
+                string dst = System.Windows.Forms.Application.ExecutablePath + ".ini_bak";
+                try {
+                    System.IO.File.Copy(src, dst);
+                } catch ( Exception ex ) {
+                    var ret = MessageBox.Show(ex.Message + "\n\nContinue anyway?.", "Settings backup failed", MessageBoxButtons.YesNo);
+                    if ( ret != DialogResult.Yes ) {
+                        return;
+                    }
+                }
                 // INI: write settings to ini
                 Settings.writePropertyGridToIni();
             } else {
