@@ -84,6 +84,8 @@ namespace MotionUVC
 
         int _motionsDetected = 0;                                            // all motions detection counter
         int _consecutivesDetected = -1;                                      // consecutive motions counter
+        System.Timers.Timer _timerMotionSequenceActive = null;               // timer is active for 1s, after a motion sequence was detected, used to overvote a false positive mation
+        string _strOverVoteFalsePositive = "";                               // global string, it's either "" or "o" 
         bool _justConnected = false;                                         // just connected 
         double _fps = 0;                                                     // current frame rate 
         long _procMs = 0;                                                    // current process time
@@ -292,6 +294,11 @@ namespace MotionUVC
         public MainForm() {
             // form designer standard init
             InitializeComponent();
+
+            // timer indicates an active motion sequence
+            _timerMotionSequenceActive = new System.Timers.Timer(1000);
+            _timerMotionSequenceActive.AutoReset = false;               // 'AutoReset = false' let timer expire after 1s --> single shot
+            //_timerMotionSequenceActive.Elapsed += (s, e) => { ; )};   // tick/elapsed handler is not needed
 
             // avoid empty var
             _sizeBeforeResize = this.Size;
@@ -2156,13 +2163,24 @@ namespace MotionUVC
                     motionDetectedInRoi = true;
                     // return value indicates, a motion took place
                     motionDetected = true;
-                    // false positive motion, if pixel change upper limit threshold is exceeded
-                    if ( currentPixelsChanged >= _roi[i].thresholdUpperLimit ) {
-                        falsePositive = true;
-                    }
+                    // overvote indicator string default value
+                    _strOverVoteFalsePositive = "";
                     // false positive motion, if reference ROI detects a motion
                     if ( _roi[i].reference ) {
                         falsePositive = true;
+                    } else {
+                        // false positive motion, if pixel change upper limit threshold is exceeded
+                        if ( currentPixelsChanged >= _roi[i].thresholdUpperLimit ) {
+                            falsePositive = true;
+                        }
+                    }
+                    // an active motion sequence (if timer is enabled) overvotes any false positive status
+                    if ( falsePositive && _timerMotionSequenceActive.Enabled ) {
+                        falsePositive = false;
+                        if ( Settings.DebugMotions ) {
+                            _strOverVoteFalsePositive = "o";
+                            Logger.logMotionListExtra(String.Format("{0} timerMotionSequenceActive overvote {1}", nowFile.ToString("HH-mm-ss_fff"), _motionsList.Count));
+                        }
                     }
                 }
 
@@ -2174,7 +2192,7 @@ namespace MotionUVC
                     g.DrawRectangle(_roi[i].reference ? new Pen(Color.Yellow) : new Pen(Color.Red), _roi[i].rect);
                     if ( Settings.ShowPixelChangePercent ) {
                         g.FillRectangle(Brushes.Yellow, _roi[i].rect.X, _roi[i].rect.Y, 30, 17);
-                        g.DrawString(String.Format("{0}%", (int)(currentPixelsChanged * 100.0f)), _pctFont, Brushes.Black, _roi[i].rect.X, _roi[i].rect.Y);
+                        g.DrawString(String.Format("{0}{1}%", _strOverVoteFalsePositive, (int)(currentPixelsChanged * 100.0f)), _pctFont, Brushes.Black, _roi[i].rect.X, _roi[i].rect.Y);
                     }
                 }
 
@@ -2310,6 +2328,10 @@ namespace MotionUVC
                                         m = _motionsList[i];
                                         Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                                     }
+
+                                    // timer indicates an active motion sequence, expires after 1s as single shot due to 'AutoReset = false'
+                                    _timerMotionSequenceActive.Stop();
+                                    _timerMotionSequenceActive.Start();
 
                                     // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
                                     Task.Run(() => {
