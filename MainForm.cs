@@ -3204,7 +3204,7 @@ namespace MotionUVC
         public String EditROIs { get; set; }
         [CategoryAttribute("ROI")]
         [Description("List all regions of interest = ROIs")]
-        [ReadOnly(true)]
+        [Browsable(false)]
         public string[] ListROIs { get; set; }
 
         // INI: read PropertyGrid from ini
