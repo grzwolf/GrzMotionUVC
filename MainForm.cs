@@ -83,7 +83,7 @@ namespace MotionUVC
         List<Motion> _motionsList = new List<Motion>();                      // list of Motion, which are motion sequences if 'consecutive' is true
 
         int _motionsDetected = 0;                                            // all motions detection counter
-        int _consecutivesDetected = -1;                                      // consecutive motions counter
+        int _consecutivesDetected = 0;                                       // consecutive motions counter
         System.Timers.Timer _timerMotionSequenceActive = null;               // timer is active for 1s, after a motion sequence was detected, used to overvote a false positive mation
         string _strOverVoteFalsePositive = "";                               // global string, it's either "" or "o" 
         bool _justConnected = false;                                         // just connected 
@@ -515,11 +515,11 @@ namespace MotionUVC
             // save all but no sequences
             if ( Settings.SaveMotion && !Settings.SaveSequences ) {
                 _motionsDetected = files.Length;
-                _consecutivesDetected = -1;
+                _consecutivesDetected = 0;
             }
             // save sequences only
             if ( !Settings.SaveMotion && Settings.SaveSequences ) {
-                _consecutivesDetected = files.Length != 0 ? files.Length : -1;
+                _consecutivesDetected = files.Length != 0 ? files.Length : 0;
                 // a bit of fake: _motionsDetected will always be larger than _consecutivesDetected, but _motionsDetected is not saved anywhere
                 _motionsDetected = _consecutivesDetected;
                 // in case path _nonc exists, adjust _motionsDetected accordingly
