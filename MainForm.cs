@@ -2710,6 +2710,8 @@ namespace MotionUVC
                 ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             } else {
                 Settings.CopyAllTo(oldSettings, out Settings);
+                // restore ROIs dummy list no matter waht
+                Settings.dummyListROIs = Settings.getROIsStringListFromPropertyGrid().ToArray();
             }
         }
 
@@ -3203,7 +3205,10 @@ namespace MotionUVC
         [Editor(typeof(RoiEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public String EditROIs { get; set; }
         [CategoryAttribute("ROI")]
-        [Description("List all regions of interest = ROIs")]
+        [DisplayName("ListROIs")]
+        [Description("List all regions of interest = ROIs (not editable)")]
+        [ReadOnly(true)]
+        public string[] dummyListROIs { get; set; }
         [Browsable(false)]
         public string[] ListROIs { get; set; }
 
@@ -3373,9 +3378,11 @@ namespace MotionUVC
             // set all ROIs in PropertyGrid array
             bool asapSaveRoisToIni = false;
             ListROIs = new string[] { "", "", "", "", "", "", "", "", "", ""};
+            List<string> strList = new List<string>();
             for ( int i = 0; i < MainForm.ROICOUNT; i++ ) {
                 // normal read from ini
                 string strROI = ini.IniReadValue("ROI section", "roi" + i.ToString(), "0,0,0,0,0,0.0,0.0,False,1");
+                strList.Add(strROI);
                 //
                 // app UPDATE <= 1.0.0.2 --> >= 1.0.0.3 "add threshold upper limit" changes ROI structure
                 //
@@ -3395,6 +3402,7 @@ namespace MotionUVC
                     ini.IniWriteValue("ROI section", "roi" + i.ToString(), ListROIs[i]);
                 }
             }
+            dummyListROIs = strList.ToArray();
             // how to use a Telegram bot
             HowToUseTelegram = "https://core.telegram.org/bots#creating-a-new-bot\\";
         }
@@ -3477,11 +3485,22 @@ namespace MotionUVC
             // reboot windows allowed after heavy ping fail
             ini.IniWriteValue(iniSection, "RebootPingAllowed", RebootPingAllowed.ToString());
             // write ROIs from PropertyGrid array to INI
+            List<string> strList = new List<string>();
             for ( int i = 0; i < MainForm.ROICOUNT; i++ ) {
                 ini.IniWriteValue("ROI section", "roi" + i.ToString(), ListROIs[i]);
+                strList.Add(ListROIs[i]);
             }
+            dummyListROIs = strList.ToArray();
         }
 
+        // obtain a string list of ROIs from the settings PropertyGrid 
+        public List<string> getROIsStringListFromPropertyGrid() {
+            List<string> list = new List<string>();
+            for ( int i = 0; i < MainForm.ROICOUNT; i++ ) {
+                list.Add(ListROIs[i]);
+            }
+            return list;
+        }
         // obtain the list of ROIs from the settings PropertyGrid
         public List<MainForm.oneROI> getROIsListFromPropertyGrid() {
             List<MainForm.oneROI> list = new List<MainForm.oneROI>();
@@ -3502,7 +3521,6 @@ namespace MotionUVC
         }
         // set the settings PropertyGrid to the list of ROIs provided by the ROIs edit dialog
         public void setPropertyGridToROIsList(List<MainForm.oneROI> list) {
-            IniFile ini = new IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
             for ( int i = 0; i < MainForm.ROICOUNT; i++ ) {
                 if ( i >= list.Count ) {
                     break;
