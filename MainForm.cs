@@ -2695,11 +2695,38 @@ namespace MotionUVC
                 // backup ini
                 string src = System.Windows.Forms.Application.ExecutablePath + ".ini";
                 string dst = System.Windows.Forms.Application.ExecutablePath + ".ini_bak";
+                // make a backup history
+                if ( System.IO.File.Exists(dst) ) {
+                    int counter = 0;
+                    do {
+                        dst = System.Windows.Forms.Application.ExecutablePath + ".ini_bak" + counter.ToString();
+                        counter++;
+                    } while ( System.IO.File.Exists(dst) );
+                    // option to delete oldest backups
+                    if ( counter > 10 ) {
+                        var retDelete = MessageBox.Show("The most recent two Settings backups will be kept.\n\nContinue?", "Delete oldest Settings backups?", MessageBoxButtons.YesNo);
+                        if ( retDelete == DialogResult.Yes ) {
+                            // save most recent .ini_bakX to .ini_bak
+                            int mostRecentIndex = counter - 2;
+                            string srcMostRecent = System.Windows.Forms.Application.ExecutablePath + ".ini_bak" + mostRecentIndex.ToString();
+                            string dstOldest = System.Windows.Forms.Application.ExecutablePath + ".ini_bak";
+                            System.IO.File.Copy(srcMostRecent, dstOldest, true);
+                            // now delete all .ini_bakX
+                            for ( int i = mostRecentIndex; i >= 0; i-- ) {
+                                string dstDelete = System.Windows.Forms.Application.ExecutablePath + ".ini_bak" + i.ToString();
+                                System.IO.File.Delete(dstDelete);
+                            }
+                            // beside of .ini_bak, ".ini_bak0" will become the most recent bak
+                            dst = System.Windows.Forms.Application.ExecutablePath + ".ini_bak0";
+                        }
+                    }
+                }
                 try {
-                    System.IO.File.Copy(src, dst);
+                    System.IO.File.Copy(src, dst, false);
                 } catch ( Exception ex ) {
-                    var ret = MessageBox.Show(ex.Message + "\n\nContinue anyway?.", "Settings backup failed", MessageBoxButtons.YesNo);
+                    var ret = MessageBox.Show(ex.Message + "\n\nContinue without Settings backup?.\n\nChanges are directly written to .ini.", "Settings backup failed", MessageBoxButtons.YesNo);
                     if ( ret != DialogResult.Yes ) {
+                        // changes to Settings are not saved to ini
                         return;
                     }
                 }
