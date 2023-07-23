@@ -114,6 +114,7 @@ namespace MotionUVC
         DateTime _connectionLiveTick = DateTime.Now;
         int _telegramOnErrorCount = 0;
         int _telegramLiveTickErrorCount = 0;
+        int _telegramRestartCounter = 0;
         bool _runPing = false;
 
         long ONE_GB =  1000000000;                                            // constants for file delete  
@@ -431,8 +432,8 @@ namespace MotionUVC
                 }
             }
             if ( Settings.PingOk ) {
-                // could be, that Telegram was recently enabled in Settings
-                if ( Settings.UseTelegramBot ) {
+                // could be, that Telegram was recently enabled in Settings, but don't activate it, if restart count is already too large
+                if ( Settings.UseTelegramBot && Settings.TelegramRestartAppCount < 5 ) {
                     if ( _Bot == null ) {
                         _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
                         _Bot.OnMessage += OnMessage;
@@ -442,6 +443,12 @@ namespace MotionUVC
                         Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
                     } else {
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
+                    }
+                } else {
+                    if ( Settings.TelegramRestartAppCount >= 5 ) {
+                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram not activated due to app restart limit");
+                    } else {
+                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram not activated");
                     }
                 }
             }
@@ -711,13 +718,33 @@ namespace MotionUVC
 
 
                 // try to restart Telegram, if it should run but it doesn't due to an internal fail
-                if ( Settings.UseTelegramBot && _Bot == null ) {
-                    Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: Telegram restart");
-                    _telegramOnErrorCount = 0;
-                    _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
-                    _Bot.OnMessage += OnMessage;
-                    _Bot.OnError += OnError;
-                    _Bot.OnLiveTick += OnLiveTick;
+                if ( Settings.UseTelegramBot && _Bot == null && Settings.TelegramRestartAppCount < 5 ) {
+                    // restart app after too many failing Telegram restarts in the current app session
+                    if ( _telegramRestartCounter > 5 ) {
+                        // set flag, that this is not an app crash
+                        AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+                        ini.IniWriteValue("MotionUVC", "AppCrash", "False");
+                        // memorize count of Telegram malfunctions forcing an app restart: needed to avoid restart loops
+                        Settings.TelegramRestartAppCount++;
+                        ini.IniWriteValue("MotionUVC", "TelegramRestartAppCount", Settings.TelegramRestartAppCount.ToString());
+                        Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick: Telegram restart count > 5, now restarting MotionUVC"));
+                        // restart MotionUVC: if Telegram restart count in session > 5, then restart app (usual max. 2 over months)
+                        string exeName = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                        ProcessStartInfo startInfo = new ProcessStartInfo(exeName);
+                        try {
+                            System.Diagnostics.Process.Start(startInfo);
+                            this.Close();
+                        } catch ( Exception ) {; }
+                    } else {
+                        // restart Telegram
+                        _telegramRestartCounter++;
+                        Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: Telegram restart");
+                        _telegramOnErrorCount = 0;
+                        _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
+                        _Bot.OnMessage += OnMessage;
+                        _Bot.OnError += OnError;
+                        _Bot.OnLiveTick += OnLiveTick;
+                    }
                 }
 
                 // EXPERIMENTAL: check for a gradual image brightness change and adjust camera exposure time accordingly
@@ -806,10 +833,17 @@ namespace MotionUVC
                 }
             }
 
-            // only care, if daily reboot of Windows-OS is active
-            if ( Settings.RebootDaily ) {
-                // timer tick is 30s, so within a range of 60s this condition will be met once for sure
-                if ( DateTime.Now.TimeOfDay >= MainForm.BootTimeBeg && DateTime.Now.TimeOfDay <= MainForm.BootTimeEnd ) {
+            // actions around 00:30 --> timer tick is 30s, so within a range of 60s this condition will be met once for sure (surely 2x)
+            if ( DateTime.Now.TimeOfDay >= MainForm.BootTimeBeg && DateTime.Now.TimeOfDay <= MainForm.BootTimeEnd ) {
+                // reset Telegram restart counter for the app current session
+                _telegramRestartCounter = 0;
+                // reset 'Telegram malfunction forced app restart' counter
+                if ( Settings.TelegramRestartAppCount > 0 ) {
+                    AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+                    ini.IniWriteValue("MotionUVC", "TelegramRestartAppCount", "0");
+                }
+                // only care, if daily reboot of Windows-OS is active
+                if ( Settings.RebootDaily ) {
                     Logger.logTextLnU(DateTime.Now, "Now: daily reboot system");
                     // INI: write to ini
                     updateSettingsFromAppProperties();
@@ -1112,6 +1146,12 @@ namespace MotionUVC
                 TimeSpan span = DateTime.Now - _connectionLiveTick;
                 if ( span.TotalSeconds > 120 ) {
                     if ( _telegramLiveTickErrorCount > 10 ) {
+                        // set flag, that this is not an app crash
+                        AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+                        ini.IniWriteValue("MotionUVC", "AppCrash", "False");
+                        // Telegram malfunction forces an app restart
+                        Settings.TelegramRestartAppCount++;
+                        ini.IniWriteValue("MotionUVC", "TelegramRestartAppCount", Settings.TelegramRestartAppCount.ToString());
                         // give up after more than 10 live tick errors and log app restart
                         Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active for #{0} cycles, now restarting MotionUVC", _telegramLiveTickErrorCount));
                         // restart MotionUVC
@@ -3209,6 +3249,10 @@ namespace MotionUVC
         [ReadOnly(false)]
         public Boolean UseTelegramBot { get; set; }
         [CategoryAttribute("Telegram")]
+        [Description("Number of app restarts due to Telegram errors")]
+        [ReadOnly(true)]
+        public int TelegramRestartAppCount { get; set; }
+        [CategoryAttribute("Telegram")]
         [Description("Telegram bot authentication token")]
         [ReadOnly(false)]
         public string BotAuthenticationToken { get; set; }
@@ -3381,6 +3425,10 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "UseTelegramBot", "False"), out tmpBool) ) {
                 UseTelegramBot = tmpBool;
             }
+            // app restart count due to a Telegram malfunction
+            if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramRestartAppCount", "0"), out tmpInt) ) {
+                TelegramRestartAppCount = tmpInt;
+            }
             // Telegram bot authentication token
             BotAuthenticationToken = ini.IniReadValue(iniSection, "BotAuthenticationToken", "");
             // app common storage path
@@ -3505,6 +3553,8 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "PingTestAddress", PingTestAddress);
             // use Telegram bot
             ini.IniWriteValue(iniSection, "UseTelegramBot", UseTelegramBot.ToString());
+            // app restart count due to Telegram malfunction
+            ini.IniWriteValue(iniSection, "TelegramRestartAppCount", TelegramRestartAppCount.ToString());
             // Telegram bot authentication token
             ini.IniWriteValue(iniSection, "BotAuthenticationToken", BotAuthenticationToken);
             // reboot windows daily
