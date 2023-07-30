@@ -43,7 +43,8 @@ namespace MotionUVC
         public static AppSettings Settings = new AppSettings();              // app settings
 
         private FilterInfoCollection _videoDevices;                          // AForge collection of camera devices
-        private VideoCaptureDevice _videoDevice = null;                      // AForge camera device  
+        private VideoCaptureDevice _videoDevice = null;                      // AForge camera device
+        private int _videoDeviceRestartCounter = 0;                          // video device restart counter per app session
                                                                              
         private string _buttonConnectString;                                 // original text on camera start button
                                                                              
@@ -1474,6 +1475,31 @@ namespace MotionUVC
                 _videoDevice.Start();
                 _videoDevice.NewFrame += new AForge.Video.NewFrameEventHandler(videoDevice_NewFrame);
                 _justConnected = true;
+                // in case, the _videoDevice won't start within 10s
+                Task.Delay(10000).ContinueWith(t => {
+                    Invoke(new Action(() => {
+                        if ( !_videoDevice.IsRunning ) {
+                            if ( _videoDeviceRestartCounter < 10 ) {
+                                _videoDeviceRestartCounter++;
+                                Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: _videoDevice is not running"));
+                                // stop camera
+                                this.connectButton.PerformClick();
+                                // wait
+                                System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+                                sw.Start();
+                                do {
+                                    Application.DoEvents();
+                                    System.Threading.Thread.Sleep(100);
+                                } while ( sw.ElapsedMilliseconds < 5000 );
+                                // start camera
+                                this.connectButton.PerformClick();
+                            } else {
+                                // give up note
+                                Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: _videoDeviceRestartCounter >= 10, giving up in current app session"));
+                            }
+                        }
+                    }));
+                });
                 // get camera auto exposure status
                 CameraControlFlags flag = getCameraExposureAuto();
                 this.buttonAutoExposure.Enabled = !(flag == CameraControlFlags.Auto);
@@ -1838,6 +1864,7 @@ namespace MotionUVC
             // stopwatch
             System.Diagnostics.Stopwatch swFrameProcessing = new System.Diagnostics.Stopwatch();
             DateTime lastFrameTime = DateTime.Now;
+            Logger.logTextLn(DateTime.Now, String.Format("cameraImageGrabber: entering image processing loop"));
             // init such vars just once 
             Font timestampFont = new Font("Arial", 20, FontStyle.Bold, GraphicsUnit.Pixel);
             int timestampHeight = 0;
@@ -1852,6 +1879,10 @@ namespace MotionUVC
             }
             // sync to motion count from today
             getTodaysMotionsCounters();
+            // camera sanity check
+            if ( !_videoDevice.IsRunning ) {
+                Logger.logTextLn(DateTime.Now, String.Format("cameraImageGrabber: _videoDevice is not running"));
+            }
 
             //
             // loop as long as camera is running
@@ -1957,6 +1988,7 @@ namespace MotionUVC
                         } else {
                             ImageWebServer.Stop();
                         }
+                        Logger.logTextLn(now, String.Format("cameraImageGrabber: firstImageProcessing done"));
                     }
 
                     // finally make the current frame to the previous frame
@@ -1991,6 +2023,7 @@ namespace MotionUVC
                     System.Threading.Thread.Sleep(Math.Max(0, 500 - (int)_procMs));
                 }
             }
+            Logger.logTextLn(DateTime.Now, String.Format("cameraImageGrabber: camera not running"));
         }
 
         // resize bitmap and keep pixel format
