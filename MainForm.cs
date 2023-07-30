@@ -2277,7 +2277,11 @@ namespace MotionUVC
 
             // image to show on webserver
             if ( Settings.RunWebserver && ImageWebServer.IsRunning ) {
-                ImageWebServer.Image = (Settings.WebserverImage == AppSettings.WebserverImageType.PROCESS) ? (Bitmap)_procFrame.Clone() : (Bitmap)_currFrame.Clone();
+                ImageWebServer.Image = (Settings.WebserverImage == AppSettings.WebserverImageType.PROCESS) ?
+                                                 (Bitmap)_procFrame.Clone() :
+                                                 (Settings.WebserverImage == AppSettings.WebserverImageType.LORES) ?
+                                                           (Bitmap)_currFrame.Clone() :
+                                                           (Bitmap)_origFrame.Clone();
             }
 
             // if video will be generated, images captured between 19:00 ... 24:00 will be saved into the next day's folder --> adjust pathname
@@ -3064,7 +3068,8 @@ namespace MotionUVC
         // webserver image type
         public enum WebserverImageType {
             LORES = 0,
-            PROCESS = 1
+            PROCESS = 1,
+            HIRES = 2,
         }
 
         // define app properties
