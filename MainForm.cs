@@ -2823,7 +2823,7 @@ namespace MotionUVC
                 Control c = ((TableLayoutPanel)sender).GetControlFromPosition(pos.Column, pos.Row);
                 if ( c != null ) {
                     string tt = this.toolTip.GetToolTip(c);
-                    toolTip.Show(tt, (TableLayoutPanel)sender, pt, 500);
+                    toolTip.Show(tt, (TableLayoutPanel)sender, pt, 5000);
                 }
             } catch {;} 
         }
