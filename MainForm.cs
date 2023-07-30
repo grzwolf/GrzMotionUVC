@@ -2810,7 +2810,7 @@ namespace MotionUVC
                 ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             } else {
                 Settings.CopyAllTo(oldSettings, out Settings);
-                // restore ROIs dummy list no matter waht
+                // restore ROIs dummy list no matter what
                 Settings.dummyListROIs = Settings.getROIsStringListFromPropertyGrid().ToArray();
             }
         }
