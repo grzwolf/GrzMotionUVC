@@ -1475,14 +1475,20 @@ namespace MotionUVC
                 _videoDevice.Start();
                 _videoDevice.NewFrame += new AForge.Video.NewFrameEventHandler(videoDevice_NewFrame);
                 _justConnected = true;
-                // in case, the _videoDevice won't start within 10s
+                // in case, the _videoDevice won't start within 10s or _justConnected is still true (aka no videoDevice_NewFrame event)
                 Task.Delay(10000).ContinueWith(t => {
                     Invoke(new Action(() => {
-                        if ( !_videoDevice.IsRunning ) {
-                            if ( _videoDeviceRestartCounter < 10 ) {
+                        // trigger for delayed action: camera is clicked on, aka  shows '- stop -'  AND camera is not running OR no new frame event happened
+                        if ( _buttonConnectString != this.connectButton.Text && (!_videoDevice.IsRunning || _justConnected) ) {
+                            if ( _videoDeviceRestartCounter < 5 ) {
                                 _videoDeviceRestartCounter++;
-                                Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: _videoDevice is not running"));
-                                // stop camera
+                                if ( !_videoDevice.IsRunning ) {
+                                    Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: _videoDevice is not running"));
+                                }
+                                if ( _justConnected ) {
+                                    Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: no videoDevice_NewFrame event received"));
+                                }
+                                // stop camera 
                                 this.connectButton.PerformClick();
                                 // wait
                                 System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
@@ -1491,11 +1497,17 @@ namespace MotionUVC
                                     Application.DoEvents();
                                     System.Threading.Thread.Sleep(100);
                                 } while ( sw.ElapsedMilliseconds < 5000 );
+                                // reset all camera properties to camera default values:
+                                //         for instance, OV5640 vid_05a3&pid_9520 stops working after gotten fooled with awkward exposure params
+                                this.buttonDefaultCameraProps.PerformClick();
                                 // start camera
                                 this.connectButton.PerformClick();
                             } else {
                                 // give up note
-                                Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: _videoDeviceRestartCounter >= 10, giving up in current app session"));
+                                Logger.logTextLn(DateTime.Now, String.Format("connectButton_Click: _videoDeviceRestartCounter >= 5, giving up in current app session"));
+                                // stop camera
+                                this.connectButton.PerformClick();
+                                this.Text = "!! Camera failure !!";
                             }
                         }
                     }));
