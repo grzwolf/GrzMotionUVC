@@ -406,6 +406,18 @@ namespace MotionUVC
         void updateAppPropertiesFromSettings() {
             // UI app layout
             this.Size = Settings.FormSize;
+            // get all display ranges (multiple monitors) and check, if desired location fits in
+            Rectangle dispRange = new Rectangle(0, 0, 0, int.MaxValue);
+            foreach ( Screen sc in Screen.AllScreens ) {
+                dispRange.X = Math.Min(sc.Bounds.X, dispRange.X);
+                dispRange.Width += sc.Bounds.Width;
+                dispRange.Height = Math.Min(sc.Bounds.Height, dispRange.Height);
+            }
+            dispRange.X -= Settings.FormSize.Width / 2;
+            dispRange.Height -= Settings.FormSize.Height / 2;
+            if ( !dispRange.Contains(Settings.FormLocation) ) {
+                Settings.FormLocation = new Point(100, 100);
+            }
             this.Location = Settings.FormLocation;
             // UI exposure controls
             this.hScrollBarExposure.Minimum = Settings.ExposureMin;
@@ -3386,11 +3398,11 @@ namespace MotionUVC
             }
             // form x
             if ( int.TryParse(ini.IniReadValue(iniSection, "FormX", "10"), out tmpInt) ) {
-                FormLocation = new Point(Math.Min(Math.Max(0, tmpInt), 500), 0);
+                FormLocation = new Point(tmpInt, 0);
             }
             // form y
             if ( int.TryParse(ini.IniReadValue(iniSection, "FormY", "10"), out tmpInt) ) {
-                FormLocation = new Point(FormLocation.X, Math.Min(Math.Max(0, tmpInt), 400));
+                FormLocation = new Point(FormLocation.X, tmpInt);
             }
             // show pixel change percentage
             if ( bool.TryParse(ini.IniReadValue(iniSection, "ShowPixelChangePercent", "False"), out tmpBool) ) {
