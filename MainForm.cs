@@ -1780,15 +1780,14 @@ namespace MotionUVC
             this.toolTip.SetToolTip(this.hScrollBarExposure, "camera exposure time = " + Settings.ExposureVal.ToString() + " (" + this.hScrollBarExposure.Minimum.ToString() + ".." + this.hScrollBarExposure.Maximum.ToString() + ")");
         }
 
-        // EXPERIMENTAL: camera exposure time monitor helper, average brightness of bmp
+        // average green brightness of bmp
         public unsafe byte Bmp24bppToGreenAverage(Bitmap bmp) {
             if ( bmp.PixelFormat != PixelFormat.Format24bppRgb ) {
                 return 0;
             }
             BitmapData bData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
             byte* scan0 = (byte*)bData.Scan0.ToPointer();
-            double lenBmp = bmp.Width * bmp.Height;
-            int lenBmpFull = bData.Stride * bmp.Height - 3;
+            int lenBmpFull = bData.Stride * bmp.Height;
             int stepCount = 3 * 100;        // 1% of pixels should be enough
             double collector = 0;
             int divisor = 0;
