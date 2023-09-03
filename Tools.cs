@@ -37,7 +37,7 @@ namespace GrzTools
             logTextToFile(logtxt);
         }
         // log motions list entry
-        public static void logMotionListEntry(string loc, int motionIndex, bool bmpExists, bool motionConsecutive, DateTime motionTime, bool motionSaved) {
+        public static void logMotionListEntry(string loc, int motionIndex, bool bmpExists, bool motionConsecutive, DateTime motionTime, bool motionSaved, string alarm = "") {
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
             while ( _busy ) {
@@ -56,9 +56,9 @@ namespace GrzTools
                 string logFileName = FullFileNameBase + DateTime.Now.ToString("_yyyyMMdd", CultureInfo.InvariantCulture) + ".motions";
                 System.IO.StreamWriter lsw = System.IO.File.AppendText(logFileName);
                 if ( new FileInfo(logFileName).Length == 0 ) {
-                    lsw.Write("call\tndx\tbmpEx.\tconsec.\ttimestamp\t\tbmpSaved\n");
+                    lsw.Write("call\tndx\tbmpEx.\tconsec.\ttimestamp\t\tbmpSaved\talarm\n");
                 }
-                string text = String.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}", loc, motionIndex, bmpExists, motionConsecutive, motionTime.ToString("HH:mm:ss_fff", CultureInfo.InvariantCulture), motionSaved);
+                string text = String.Format("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}", loc, motionIndex, bmpExists, motionConsecutive, motionTime.ToString("HH:mm:ss_fff", CultureInfo.InvariantCulture), motionSaved, alarm);
                 lsw.Write(text + "\n");
                 lsw.Close();
             } catch {; }

@@ -108,7 +108,9 @@ namespace MotionUVC
         TeleSharp.TeleSharp _Bot = null;                                     // Telegram bot  
         bool _alarmSequence = false;
         bool _alarmSequenceBusy = false;
-        bool _alarmNotify = false;
+        bool _alarmNotify = false;                                           // sends all motions (SaveMotions) or a sequence photo every 60 consecutives (SaveSequence)
+        int _lastSequencePhotoNdxSent = -60;                                 // because 60 images are bypassed, but not if consecutive count <60
+        DateTime _lastSequenceSendTime = DateTime.Now;                       // limit video sequence send cadence 
         bool _sendVideo = false;
         MessageSender _notifyReceiver = null;
         MessageSender _sequenceReceiver = null;
@@ -2458,6 +2460,11 @@ namespace MotionUVC
                                                 _alarmSequenceBusy = false;
                                                 return;
                                             }
+                                            // limit sending a video sequence to one per 30s
+                                            if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
+                                                _alarmSequenceBusy = false;
+                                                return;
+                                            }
                                             // prevent to send the current motion sequence again, by placing two stoppers into motion list
                                             _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
                                             if ( Settings.DebugMotions ) {
@@ -2571,6 +2578,47 @@ namespace MotionUVC
                 } else {
                     break;
                 }
+            }
+            // since motion sequence list is up to date, send ONE sequence photo to Telegram
+            if ( _alarmNotify && Settings.SaveSequences ) {
+                // limit sending a sequence image to one image per 30s aka 60 images @ 2fps
+                int lastNdx = _motionsList.Count - 1;
+                if ( lastNdx - _lastSequencePhotoNdxSent < 60 ) {
+                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo time to short"));
+                    return;
+                }
+                // don't continue, if sequence count is to small; have at least 10 consecutives
+                int consecutiveCount = 0;
+                for ( int i = lastNdx; i >= 0; i-- ) {
+                    if ( !_motionsList[i].motionConsecutive ) {
+                        if ( consecutiveCount < 10 ) {
+                            Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low: ", consecutiveCount));
+                            return;
+                        }
+                        break;
+                    }
+                    consecutiveCount++;
+                }
+                // fire & forget
+                _lastSequencePhotoNdxSent = lastNdx;
+                Task.Run(() => {
+                    try {
+                        // get lat image from the sequence
+                        Bitmap image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
+                        // send image via Telegram
+                        _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
+                        byte[] buffer = bitmapToByteArray(image);
+                        _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
+                        Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo {0} sent", lastNdx));
+                        if ( Settings.DebugMotions ) {
+                            Motion m = _motionsList[lastNdx];
+                            Logger.logMotionListEntry("alarm", lastNdx, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved, "alarm");
+                        }
+                        image.Dispose();
+                    } catch ( Exception ex ) {
+                        Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo {0} ex: {1}", lastNdx, ex.Message));
+                    }
+                });
             }
         }
 
