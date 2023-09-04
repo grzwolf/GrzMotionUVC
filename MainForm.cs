@@ -109,8 +109,7 @@ namespace MotionUVC
         bool _alarmSequence = false;
         bool _alarmSequenceBusy = false;
         bool _alarmNotify = false;                                           // sends all motions (SaveMotions) or a sequence photo every 60 consecutives (SaveSequence)
-        int _lastSequencePhotoNdxSent = -60;                                 // because 60 images are bypassed, but not if consecutive count <60
-        DateTime _lastSequenceSendTime = DateTime.Now;                       // limit video sequence send cadence 
+        DateTime _lastSequenceSendTime = DateTime.Now;                       // limit video/photo sequence send cadence 
         bool _sendVideo = false;
         MessageSender _notifyReceiver = null;
         MessageSender _sequenceReceiver = null;
@@ -2465,6 +2464,7 @@ namespace MotionUVC
                                                 _alarmSequenceBusy = false;
                                                 return;
                                             }
+                                            _lastSequenceSendTime = DateTime.Now;
                                             // prevent to send the current motion sequence again, by placing two stoppers into motion list
                                             _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
                                             if ( Settings.DebugMotions ) {
@@ -2487,12 +2487,12 @@ namespace MotionUVC
                         }
                     } catch ( Exception ex ) {
                         string msg = ex.Message;
-                        Logger.logTextLnU(DateTime.Now, "image save ex:" + msg);
+                        Logger.logTextLnU(DateTime.Now, "image save ex: " + msg);
                     }
                 }
 
                 // send motion alarm photo to Telegram
-                if ( _alarmNotify ) {
+                if ( _alarmNotify && Settings.SaveMotion ) {
                     Task.Run(() => {
                         try {
                             // all alarm images are sent
@@ -2501,8 +2501,7 @@ namespace MotionUVC
                             _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm photo");
                             Logger.logTextLn(DateTime.Now, "alarm photo sent");
                         } catch ( Exception ex ) {
-                            string msg = ex.Message;
-                            Logger.logTextLnU(DateTime.Now, msg);
+                            Logger.logTextLnU(DateTime.Now, "_alarmNotify && Settings.SaveMotion: " + ex.Message);
                         }
                     });
                 }
@@ -2581,26 +2580,26 @@ namespace MotionUVC
             }
             // since motion sequence list is up to date, send ONE sequence photo to Telegram
             if ( _alarmNotify && Settings.SaveSequences ) {
-                // limit sending a sequence image to one image per 30s aka 60 images @ 2fps
-                int lastNdx = _motionsList.Count - 1;
-                if ( lastNdx - _lastSequencePhotoNdxSent < 60 ) {
-                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo time to short"));
-                    return;
-                }
                 // don't continue, if sequence count is to small; have at least 10 consecutives
+                int lastNdx = _motionsList.Count - 1;
                 int consecutiveCount = 0;
                 for ( int i = lastNdx; i >= 0; i-- ) {
                     if ( !_motionsList[i].motionConsecutive ) {
                         if ( consecutiveCount < 10 ) {
-                            Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low: ", consecutiveCount));
+                            Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low: {0}", consecutiveCount));
                             return;
                         }
                         break;
                     }
                     consecutiveCount++;
                 }
+                // limit sending a sequence image to one image per 30s aka 60 images @ 2fps
+                if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
+                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo time to short"));
+                    return;
+                }
+                _lastSequenceSendTime = DateTime.Now;
                 // fire & forget
-                _lastSequencePhotoNdxSent = lastNdx;
                 Task.Run(() => {
                     try {
                         // get lat image from the sequence
