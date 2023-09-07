@@ -752,7 +752,7 @@ namespace MotionUVC
                     } else {
                         // restart Telegram
                         _telegramRestartCounter++;
-                        Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: Telegram restart");
+                        Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick: Telegram restart #{0} of 5", _telegramRestartCounter));
                         _telegramOnErrorCount = 0;
                         _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
                         _Bot.OnMessage += OnMessage;
