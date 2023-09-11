@@ -454,6 +454,14 @@ namespace MotionUVC
                         _Bot.OnError += OnError;
                         _Bot.OnLiveTick += OnLiveTick;
                         this.timerCheckTelegramLiveTick.Start();
+                        // restart alarm notify if previously enabled
+                        _alarmNotify = false;
+                        _notifyReceiver = new MessageSender();
+                        _notifyReceiver.Id = -1;
+                        if ( Settings.KeepTelegramNotifyAction ) {
+                            _alarmNotify = true;
+                            _notifyReceiver.Id = Settings.TelegramNotifyReceiver;
+                        }
                         Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
                     } else {
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
@@ -475,6 +483,9 @@ namespace MotionUVC
                     _Bot.Stop();
                     this.timerCheckTelegramLiveTick.Stop();
                     _Bot = null;
+                    // if Telegram is actively disabled, disable permanent alarm notification too
+                    Settings.KeepTelegramNotifyAction = false;
+                    Settings.TelegramNotifyReceiver = -1;
                     Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot deactivated");
                 }
             }
@@ -1298,6 +1309,12 @@ namespace MotionUVC
                                 });
                                 _alarmNotify = true;
                                 _notifyReceiver = sender;
+                                // a fresh start quits a previous notification scenario
+                                if ( Settings.KeepTelegramNotifyAction ) {
+                                    Text += " - switched to a new message receiver";
+                                    Settings.KeepTelegramNotifyAction = false;
+                                    Settings.TelegramNotifyReceiver = -1;
+                                }
                                 break;
                             }
                         case "/stop_notify": {
@@ -1307,6 +1324,20 @@ namespace MotionUVC
                                 });
                                 _alarmNotify = false;
                                 _notifyReceiver = null;
+                                // stop means stop permanent notification too
+                                Settings.KeepTelegramNotifyAction = false;
+                                Settings.TelegramNotifyReceiver = -1;
+                                break;
+                            }
+                        case "/keep_notify": {
+                                _Bot.SendMessage(new SendMessageParams {
+                                    ChatId = sender.Id.ToString(),
+                                    Text = "roger /keep_notify until further notice"
+                                });
+                                _alarmNotify = true;
+                                _notifyReceiver = sender;
+                                Settings.KeepTelegramNotifyAction = true;
+                                Settings.TelegramNotifyReceiver = _notifyReceiver.Id;
                                 break;
                             }
                         case "/image": {
@@ -3357,6 +3388,14 @@ namespace MotionUVC
         [ReadOnly(false)]
         public Boolean UseTelegramBot { get; set; }
         [CategoryAttribute("Telegram")]
+        [Description("Keep Telegram alarm notification permanently")]
+        [ReadOnly(false)]
+        public Boolean KeepTelegramNotifyAction { get; set; }
+        [CategoryAttribute("Telegram")]
+        [Description("Telegram alarm notification receiver")]
+        [ReadOnly(false)]
+        public int TelegramNotifyReceiver { get; set; }
+        [CategoryAttribute("Telegram")]
         [Description("Number of app restarts due to Telegram errors")]
         [ReadOnly(true)]
         public int TelegramRestartAppCount { get; set; }
@@ -3533,6 +3572,16 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "UseTelegramBot", "False"), out tmpBool) ) {
                 UseTelegramBot = tmpBool;
             }
+            // make Telegram alarm notification permanent
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "KeepTelegramNotifyAction", "False"), out tmpBool) ) {
+                KeepTelegramNotifyAction = tmpBool;
+            }
+            TelegramNotifyReceiver = -1;
+            if ( KeepTelegramNotifyAction ) {
+                if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramNotifyReceiver", "-1"), out tmpInt) ) {
+                    TelegramNotifyReceiver = tmpInt;
+                }
+            }
             // app restart count due to a Telegram malfunction
             if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramRestartAppCount", "0"), out tmpInt) ) {
                 TelegramRestartAppCount = tmpInt;
@@ -3661,6 +3710,13 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "PingTestAddress", PingTestAddress);
             // use Telegram bot
             ini.IniWriteValue(iniSection, "UseTelegramBot", UseTelegramBot.ToString());
+            // make Telegram alarm notification permanent
+            ini.IniWriteValue(iniSection, "KeepTelegramNotifyAction", KeepTelegramNotifyAction.ToString());
+            if ( KeepTelegramNotifyAction ) {
+                ini.IniWriteValue(iniSection, "TelegramNotifyReceiver", TelegramNotifyReceiver.ToString());
+            } else {
+                ini.IniWriteValue(iniSection, "TelegramNotifyReceiver", "");
+            }
             // app restart count due to Telegram malfunction
             ini.IniWriteValue(iniSection, "TelegramRestartAppCount", TelegramRestartAppCount.ToString());
             // Telegram bot authentication token
