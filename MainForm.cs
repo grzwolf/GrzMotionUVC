@@ -2611,18 +2611,25 @@ namespace MotionUVC
             }
             // since motion sequence list is up to date, send ONE sequence photo to Telegram
             if ( _alarmNotify && Settings.SaveSequences ) {
-                // don't continue, if sequence count is to small; have at least 10 consecutives
-                int lastNdx = _motionsList.Count - 1;
+                // loop for consecutives                 
                 int consecutiveCount = 0;
+                int lastNdx = _motionsList.Count - 1;
                 for ( int i = lastNdx; i >= 0; i-- ) {
-                    if ( !_motionsList[i].motionConsecutive ) {
+                    if ( _motionsList[i].motionConsecutive ) {
+                        consecutiveCount++;
+                    } else {
+                        // don't continue, if sequence count is to small; have at least 10 consecutives in the most recent sequence
                         if ( consecutiveCount < 10 ) {
-                            Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low: {0}", consecutiveCount));
+                            Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low #1: {0}", consecutiveCount));
                             return;
                         }
                         break;
                     }
-                    consecutiveCount++;
+                }
+                // above loop breaks, if total list count is too small
+                if ( consecutiveCount < 10 ) {
+                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low #2: {0}", consecutiveCount));
+                    return;
                 }
                 // limit sending a sequence image to one image per 30s aka 60 images @ 2fps
                 if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
@@ -2633,7 +2640,7 @@ namespace MotionUVC
                 // fire & forget
                 Task.Run(() => {
                     try {
-                        // get lat image from the sequence
+                        // get last image from the sequence
                         Bitmap image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
                         // send image via Telegram
                         _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
