@@ -1238,7 +1238,7 @@ namespace MotionUVC
                         case "/help": {
                                 _Bot.SendMessage(new SendMessageParams {
                                     ChatId = sender.Id.ToString(),
-                                    Text = "Valid commands, pick one:\n/hello /help /time /location /video /image /start_notify /stop_notify /start_alarm /stop_alarm"
+                                    Text = "Valid commands, pick one:\n\n/hello /help /time /location\n\n/video /image\n\n/start_notify /stop_notify /keep_notify\n\n/start_alarm /stop_alarm"
                                 });
                                 break;
                             }
@@ -1303,18 +1303,22 @@ namespace MotionUVC
                                 break;
                             }
                         case "/start_notify": {
+                                // a fresh start quits a previous notification scenario: inform subscriber
+                                if ( Settings.KeepTelegramNotifyAction ) {
+                                    _Bot.SendMessage(new SendMessageParams {
+                                        ChatId = Settings.TelegramNotifyReceiver.ToString(),
+                                        Text = "notification is switched to a new message receiver"
+                                    });
+                                    Settings.KeepTelegramNotifyAction = false;
+                                    Settings.TelegramNotifyReceiver = -1;
+                                }
+                                // inform current subscriber
                                 _Bot.SendMessage(new SendMessageParams {
                                     ChatId = sender.Id.ToString(),
                                     Text = "roger /start_notify"
                                 });
                                 _alarmNotify = true;
                                 _notifyReceiver = sender;
-                                // a fresh start quits a previous notification scenario
-                                if ( Settings.KeepTelegramNotifyAction ) {
-                                    Text += " - switched to a new message receiver";
-                                    Settings.KeepTelegramNotifyAction = false;
-                                    Settings.TelegramNotifyReceiver = -1;
-                                }
                                 break;
                             }
                         case "/stop_notify": {
