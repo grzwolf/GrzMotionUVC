@@ -109,7 +109,7 @@ namespace MotionUVC
         bool _alarmSequence = false;
         bool _alarmSequenceBusy = false;
         bool _alarmNotify = false;                                           // sends all motions (SaveMotions) or a sequence photo every 60 consecutives (SaveSequence)
-        DateTime _lastSequenceSendTime = DateTime.Now;                       // limit video/photo sequence send cadence 
+        DateTime _lastSequenceSendTime = new DateTime();                     // limit video/photo sequence send cadence 
         bool _sendVideo = false;
         MessageSender _notifyReceiver = null;
         MessageSender _sequenceReceiver = null;
