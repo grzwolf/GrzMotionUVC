@@ -107,6 +107,7 @@ namespace MotionUVC
                 
         TeleSharp.TeleSharp _Bot = null;                                     // Telegram bot  
         bool _alarmSequence = false;
+        bool _alarmSequenceAsap = false;
         bool _alarmSequenceBusy = false;
         bool _alarmNotify = false;                                           // sends all motions (SaveMotions) or a sequence photo every 60 consecutives (SaveSequence)
         DateTime _lastSequenceSendTime = new DateTime();                     // limit video/photo sequence send cadence 
@@ -580,13 +581,14 @@ namespace MotionUVC
                     _alarmSequenceBusy = false;
                     return;
                 }
-                // are there consecutive motions?
+                // pick the most recent consecutive motion
+                int lastConsecutiveNdx = -1;
                 Motion mo = new Motion("", new DateTime(1900, 01, 01));
-                // pick the most recent motion
                 try {
                     for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
                         if ( _motionsList[i].motionConsecutive ) {
                             mo = _motionsList[i];
+                            lastConsecutiveNdx = i;
                             break;
                         }
                     }
@@ -595,14 +597,12 @@ namespace MotionUVC
                     _alarmSequenceBusy = false;
                     return;
                 }
-                // don't continue, if latest consecutive motion is older than 35s
-                if ( (DateTime.Now - mo.motionDateTime).TotalSeconds > 35 ) {
+                // don't continue, if latest consecutive motion doeas not exist or is older than 35s
+                if ( lastConsecutiveNdx == -1 || (DateTime.Now - mo.motionDateTime).TotalSeconds > 35 ) {
                     _alarmSequenceBusy = false;
                     return;
                 }
-                // now it's worth to make a motion list copy
-                List<Motion> currList = new List<Motion>(_motionsList);
-                // add dummy entry to the original motion list, it acts like a marker of what was sent already
+                // add dummy entry to the original motion list, it acts like a marker of what was previously sent
                 try {
                     _motionsList.Add(new Motion("", new DateTime(1900, 1, 1)));
                     if ( Settings.DebugMotions ) {
@@ -611,24 +611,11 @@ namespace MotionUVC
                         Logger.logMotionListEntry("dummy", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                     }
                 } catch {;}
-                // only pick the latest consecutive motion index
-                int startNdx = -1;  
-                for ( int i = currList.Count - 1; i >= 0; i-- ) {
-                    if ( currList[i].motionConsecutive ) {
-                        startNdx = i;
-                        break;
-                    }
-                }
-                // don't continue, if there is no consecutive motion
-                if ( startNdx == -1 ) {
-                    _alarmSequenceBusy = false;
-                    return;
-                }
                 // make a sub list containing the latest consecutive motions
                 List<Motion> subList = new List<Motion>();
-                for ( int i = startNdx; i>=0; i-- ) {
-                    if ( currList[i].motionConsecutive ) {
-                        subList.Insert(0, currList[i]);
+                for ( int i = lastConsecutiveNdx; i>=0; i-- ) {
+                    if ( _motionsList[i].motionConsecutive ) {
+                        subList.Insert(0, _motionsList[i]);
                     } else {
                         break;
                     }
@@ -639,7 +626,9 @@ namespace MotionUVC
                     return;
                 }
                 // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy when done
-                Task.Run(() => { makeMotionSequence(subList, Settings.CameraResolution); });
+                Task.Run(() => { 
+                    makeMotionSequence(subList, Settings.CameraResolution); 
+                });
             }
 
             // once per hour
@@ -1238,7 +1227,7 @@ namespace MotionUVC
                         case "/help": {
                                 _Bot.SendMessage(new SendMessageParams {
                                     ChatId = sender.Id.ToString(),
-                                    Text = "Valid commands, pick one:\n\n/hello /help /time /location\n\n/video /image\n\n/start_notify /stop_notify /keep_notify\n\n/start_alarm /stop_alarm"
+                                    Text = "Valid commands, pick one:\n\n/hello  /help  /time  /location\n\n/video  /image\n\n/start_notify  /stop_notify  /keep_notify\n\n/quick_alarm  /start_alarm  /stop_alarm"
                                 });
                                 break;
                             }
@@ -1284,11 +1273,22 @@ namespace MotionUVC
                                 }
                                 break;
                             }
+                        case "/quick_alarm": {
+                                _Bot.SendMessage(new SendMessageParams {
+                                    ChatId = sender.Id.ToString(),
+                                    Text = "roger /quick_alarm - alarm will be sent ASAP"
+                                });
+                                _alarmSequenceAsap = true;
+                                _alarmSequence = true;
+                                _sequenceReceiver = sender;
+                                break;
+                            }
                         case "/start_alarm": {
                                 _Bot.SendMessage(new SendMessageParams {
                                     ChatId = sender.Id.ToString(),
-                                    Text = "roger /start_alarm"
+                                    Text = "roger /start_alarm - alarm send delay max. 30s "
                                 });
+                                _alarmSequenceAsap = false;
                                 _alarmSequence = true;
                                 _sequenceReceiver = sender;
                                 break;
@@ -1298,6 +1298,7 @@ namespace MotionUVC
                                     ChatId = sender.Id.ToString(),
                                     Text = "roger /stop_alarm"
                                 });
+                                _alarmSequenceAsap = false;
                                 _alarmSequence = false;
                                 _sequenceReceiver = null;
                                 break;
@@ -2441,28 +2442,28 @@ namespace MotionUVC
                             // need to wait for at least 3 queued images to allow some time comparison between the list entries
                             if ( _motionsList.Count > 2 ) {
 
+                                // slightly faster using vars of array elements other than accessing array with index
+                                Motion m1 = _motionsList[_motionsList.Count - 1];
+                                Motion m2 = _motionsList[_motionsList.Count - 2];
+                                Motion m3 = _motionsList[_motionsList.Count - 3];
+
                                 // calc time differences: last to 3rd to last, last to penultimate, penultimate to 3rd to last
-                                TimeSpan lastToThrd = _motionsList[_motionsList.Count - 1].motionDateTime - _motionsList[_motionsList.Count - 3].motionDateTime;
-                                TimeSpan lastToPenu = _motionsList[_motionsList.Count - 1].motionDateTime - _motionsList[_motionsList.Count - 2].motionDateTime;
-                                TimeSpan penuToThrd = _motionsList[_motionsList.Count - 2].motionDateTime - _motionsList[_motionsList.Count - 3].motionDateTime;
+                                TimeSpan lastToThrd = m1.motionDateTime - m3.motionDateTime;
+                                TimeSpan lastToPenu = m1.motionDateTime - m2.motionDateTime;
+                                TimeSpan penuToThrd = m2.motionDateTime - m3.motionDateTime;
                                 
                                 // check if the current motion happened within certain time intervals to previous motions --> 'sequence'
                                 if ( (lastToThrd.TotalSeconds < 2.5f) || ((lastToPenu.TotalSeconds < 1.5f) && (penuToThrd.TotalSeconds < 1.5f)) ) {
 
-                                    // make the last three motions consecutive
-                                    _motionsList[_motionsList.Count - 3].motionConsecutive = true;
-                                    _motionsList[_motionsList.Count - 2].motionConsecutive = true;
-                                    _motionsList[_motionsList.Count - 1].motionConsecutive = true;
+                                    // make the last three motions consecutive: !! m1, m2, m3 will change _motionsList[ndx] directly !!
+                                    m3.motionConsecutive = m3.motionDateTime.Year != 1900 ? true : false;  // value '1900' acts as a video sequence stop marker
+                                    m2.motionConsecutive = m2.motionDateTime.Year != 1900 ? true : false;
+                                    m1.motionConsecutive = m1.motionDateTime.Year != 1900 ? true : false;
                                     if ( Settings.DebugMotions ) {
                                         int i = _motionsList.Count - 3;
-                                        Motion m = _motionsList[i];
-                                        Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
-                                        i = _motionsList.Count - 2;
-                                        m = _motionsList[i];
-                                        Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
-                                        i = _motionsList.Count - 1;
-                                        m = _motionsList[i];
-                                        Logger.logMotionListEntry("consec", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                        Logger.logMotionListEntry("consec", i, m3.imageMotion != null, m3.motionConsecutive, m3.motionDateTime, m3.motionSaved);
+                                        Logger.logMotionListEntry("consec", i+1, m2.imageMotion != null, m2.motionConsecutive, m2.motionDateTime, m2.motionSaved);
+                                        Logger.logMotionListEntry("consec", i+2, m1.imageMotion != null, m1.motionConsecutive, m1.motionDateTime, m1.motionSaved);
                                     }
 
                                     // timer indicates an active motion sequence, expires after 1s as single shot due to 'AutoReset = false'
@@ -2474,48 +2475,53 @@ namespace MotionUVC
                                         saveSequence();
                                     });
 
-                                    // make a motion sequence video only in this specific case
-                                    if ( _alarmSequence ) {
-                                        // fire & forget is ok
-                                        Task.Run(() => {
-                                            // make a sub list containing the latest consecutive motions
-                                            _alarmSequenceBusy = true;
-                                            List<Motion> subList = new List<Motion>();
-                                            int cnt = _motionsList.Count - 1;
-                                            for ( int i = cnt; i >= 0; i-- ) {
-                                                if ( _motionsList[i].motionConsecutive ) {
-                                                    subList.Insert(0, _motionsList[i]);
-                                                } else {
-                                                    break;
+                                    // ASAP make a motion sequence video
+                                    if ( _alarmSequence && _alarmSequenceAsap ) {
+                                        bool continueWithVideoSequence = true;
+                                        // limit sending a video sequence to one per 30s
+                                        if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
+                                            continueWithVideoSequence = false;
+                                        }
+                                        // have at least 7 consecutives
+                                        int consecutiveCount = 0;
+                                        for ( int i = _motionsList.Count - 1; i >= 0; i-- ) {
+                                            if ( _motionsList[i].motionConsecutive ) {
+                                                consecutiveCount++;
+                                            } else {
+                                                break;
+                                            }
+                                        }
+                                        if ( consecutiveCount < 7 ) {
+                                            continueWithVideoSequence = false;
+                                        }
+                                        if ( continueWithVideoSequence ) {
+                                            // fire & forget is ok
+                                            Task.Run(() => {
+                                                // busy flag
+                                                _alarmSequenceBusy = true;
+                                                // time stamp
+                                                _lastSequenceSendTime = DateTime.Now;
+                                                // make a sub list containing the latest consecutive motions
+                                                List<Motion> subList = new List<Motion>();
+                                                int cnt = _motionsList.Count - 1;
+                                                for ( int i = cnt; i >= 0; i-- ) {
+                                                    if ( _motionsList[i].motionConsecutive ) {
+                                                        subList.Insert(0, _motionsList[i]);
+                                                    } else {
+                                                        break;
+                                                    }
                                                 }
-                                            }
-                                            // don't continue, if subList is too small = have at least a 3s motion sequence (6 motions); less motions will be picked up by timer flow control with some delay
-                                            if ( subList.Count < 7 ) {
-                                                _alarmSequenceBusy = false;
-                                                return;
-                                            }
-                                            // limit sending a video sequence to one per 30s
-                                            if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
-                                                _alarmSequenceBusy = false;
-                                                return;
-                                            }
-                                            _lastSequenceSendTime = DateTime.Now;
-                                            // prevent to send the current motion sequence again, by placing two stoppers into motion list
-                                            _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
-                                            if ( Settings.DebugMotions ) {
-                                                int i = _motionsList.Count - 1;
-                                                Motion m = _motionsList[i];
-                                                Logger.logMotionListEntry("alarm", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
-                                            }
-                                            _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
-                                            if ( Settings.DebugMotions ) {
-                                                int i = _motionsList.Count - 1;
-                                                Motion m = _motionsList[i];
-                                                Logger.logMotionListEntry("alarm", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
-                                            }
-                                            // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy when done
-                                            makeMotionSequence(subList, Settings.CameraResolution);
-                                        });
+                                                // prevent to send the current motion sequence again, by placing a stopper into the motion list
+                                                _motionsList.Add(new Motion("", new DateTime(1900, 01, 01)));
+                                                if ( Settings.DebugMotions ) {
+                                                    int i = _motionsList.Count - 1;
+                                                    Motion m = _motionsList[i];
+                                                    Logger.logMotionListEntry("alarm", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
+                                                }
+                                                // make latest motion video sequence, send it via Telegram and reset flag _alarmSequenceBusy when done
+                                                makeMotionSequence(subList, Settings.CameraResolution);
+                                            });
+                                        }
                                     }
                                 }
                             }
