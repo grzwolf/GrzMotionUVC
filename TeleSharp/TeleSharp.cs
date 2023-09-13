@@ -278,7 +278,7 @@ namespace TeleSharp
         /// </summary>
         /// <param name="sender">The sender to indicate towards</param>
         /// <param name="action">The action the bot is doing (from the ChatAction class)</param>
-        public void SetCurrentAction(MessageSender sender, ChatAction action)
+        public IRestResponse SetCurrentAction(MessageSender sender, ChatAction action)
         {
             if (sender == null)
                 throw new ArgumentNullException(nameof(sender));
@@ -313,7 +313,7 @@ namespace TeleSharp
             }
 
             if (string.IsNullOrEmpty(actionName))
-                return;
+                return null;
 
             var request = Utils.GenerateRestRequest(Resources.Method_SendChatAction, Method.POST, null,
                 new Dictionary<string, object>
@@ -322,7 +322,7 @@ namespace TeleSharp
                     {Resources.Param_Action, actionName},
                 });
 
-            _botClient.Execute(request);
+            return _botClient.Execute(request);
         }
 
         /// <summary>

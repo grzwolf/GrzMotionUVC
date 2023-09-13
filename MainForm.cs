@@ -24,6 +24,7 @@ using System.Drawing.Drawing2D;
 using System.Diagnostics;
 using System.Linq;
 using System.Drawing.Design;
+using RestSharp;
 
 namespace MotionUVC
 {
@@ -110,6 +111,7 @@ namespace MotionUVC
         bool _alarmSequenceAsap = false;
         bool _alarmSequenceBusy = false;
         bool _alarmNotify = false;                                           // sends all motions (SaveMotions) or a sequence photo every 60 consecutives (SaveSequence)
+        string _notifyText = "";
         DateTime _lastSequenceSendTime = new DateTime();                     // limit video/photo sequence send cadence 
         bool _sendVideo = false;
         MessageSender _notifyReceiver = null;
@@ -459,9 +461,11 @@ namespace MotionUVC
                         _alarmNotify = false;
                         _notifyReceiver = new MessageSender();
                         _notifyReceiver.Id = -1;
+                        _notifyText = "";
                         if ( Settings.KeepTelegramNotifyAction ) {
                             _alarmNotify = true;
                             _notifyReceiver.Id = Settings.TelegramNotifyReceiver;
+                            _notifyText = " - permanent alarm notification active";
                         }
                         Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
                     } else {
@@ -487,6 +491,7 @@ namespace MotionUVC
                     // if Telegram is actively disabled, disable permanent alarm notification too
                     Settings.KeepTelegramNotifyAction = false;
                     Settings.TelegramNotifyReceiver = -1;
+                    _notifyText = "";
                     Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot deactivated");
                 }
             }
@@ -1320,6 +1325,7 @@ namespace MotionUVC
                                 });
                                 _alarmNotify = true;
                                 _notifyReceiver = sender;
+                                _notifyText = " - alarm notification active";
                                 break;
                             }
                         case "/stop_notify": {
@@ -1332,6 +1338,7 @@ namespace MotionUVC
                                 // stop means stop permanent notification too
                                 Settings.KeepTelegramNotifyAction = false;
                                 Settings.TelegramNotifyReceiver = -1;
+                                _notifyText = "";
                                 break;
                             }
                         case "/keep_notify": {
@@ -1343,6 +1350,7 @@ namespace MotionUVC
                                 _notifyReceiver = sender;
                                 Settings.KeepTelegramNotifyAction = true;
                                 Settings.TelegramNotifyReceiver = _notifyReceiver.Id;
+                                _notifyText = " - permanent alarm notification active";
                                 break;
                             }
                         case "/image": {
@@ -2653,9 +2661,25 @@ namespace MotionUVC
                         // get last image from the sequence
                         Bitmap image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
                         // send image via Telegram
-                        _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
+                        IRestResponse response = _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
+                        if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest ) {
+                            AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #1.", Settings.TelegramNotifyReceiver), "Error", 5000);
+                            Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #1", Settings.TelegramNotifyReceiver));
+                            _notifyReceiver.Id = -1;
+                            Settings.TelegramNotifyReceiver = -1;
+                            Settings.KeepTelegramNotifyAction = false;
+                            _notifyText = "";
+                        }
                         byte[] buffer = bitmapToByteArray(image);
-                        _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
+                        TeleSharp.Entities.Message msgResponse = _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
+                        if ( msgResponse.MessageId == 0 ) {
+                            AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #2.", Settings.TelegramNotifyReceiver), "Error", 5000);
+                            Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #2", Settings.TelegramNotifyReceiver));
+                            _notifyReceiver.Id = -1;
+                            Settings.TelegramNotifyReceiver = -1;
+                            Settings.KeepTelegramNotifyAction = false;
+                            _notifyText = "";
+                        }
                         Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo {0} sent", lastNdx));
                         if ( Settings.DebugMotions ) {
                             Motion m = _motionsList[lastNdx];
@@ -2744,7 +2768,7 @@ namespace MotionUVC
         void headLine() {
             Invoke(new Action(() => {
                 try {
-                    this.Text = String.Format("MotionUVC - {0}ms @{1:0.0}fps", _procMs, _fps);
+                    this.Text = String.Format("MotionUVC - {0}ms @{1:0.0}fps{2}", _procMs, _fps, _notifyText);
                 } catch ( Exception ex ) {
                     this.Text = "headLine() Exception " + ex.Message;
                 }
@@ -3597,6 +3621,10 @@ namespace MotionUVC
             if ( KeepTelegramNotifyAction ) {
                 if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramNotifyReceiver", "-1"), out tmpInt) ) {
                     TelegramNotifyReceiver = tmpInt;
+                    if ( TelegramNotifyReceiver == 0 || TelegramNotifyReceiver == -1 ) {
+                        KeepTelegramNotifyAction = false;
+                        Logger.logTextLnU(DateTime.Now, String.Format("fillPropertyGridFromIni(): invalid Id {0} #1", TelegramNotifyReceiver));
+                    }
                 }
             }
             // app restart count due to a Telegram malfunction
