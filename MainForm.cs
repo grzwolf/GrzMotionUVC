@@ -368,6 +368,12 @@ namespace MotionUVC
 
         // called when MainForm is finally shown
         private void MainForm_Shown(object sender, EventArgs e) {
+
+#if DEBUG
+            MessageBox.Show("Ok to start session", "DEBUG Session");
+#endif
+
+
             // log start
             AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
             Settings.WriteLogfile = bool.Parse(ini.IniReadValue("MotionUVC", "WriteLogFile", "False"));
@@ -2540,8 +2546,8 @@ namespace MotionUVC
                     }
                 }
 
-                // send motion alarm photo to Telegram
-                if ( _alarmNotify && Settings.SaveMotion ) {
+                // send motion alarm photo to Telegram: meet conditions and send all night events
+                if ( _alarmNotify && (Settings.SaveMotion || itsDarkOutside) ) {
                     Task.Run(() => {
                         try {
                             // all alarm images are sent
