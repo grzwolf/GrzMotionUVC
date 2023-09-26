@@ -878,6 +878,10 @@ namespace MotionUVC
                     ini.IniWriteValue("MotionUVC", "AppCrash", "False");
                     // reboot
                     System.Diagnostics.Process.Start("shutdown", "/r /f /y /t 1");    // REBOOT: /f == force if /t > 0; /y == yes to all questions asked 
+                } else {
+                    // reset counters etc
+                    _motionsList.Clear();
+                    getTodaysMotionsCounters();
                 }
             }
         }
