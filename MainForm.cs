@@ -2025,34 +2025,35 @@ namespace MotionUVC
                     if ( _currFrame != null ) {
                         _currFrame.Dispose();
                     }
+                    excStep = 4;
                     _currFrame = resizeBitmap(_origFrame, Settings.ScaledImageSize);
 
                     // this will become the processed frame
-                    excStep = 4;
+                    excStep = 5;
                     if ( _procFrame != null ) {
                         _procFrame.Dispose();
                     }
                     _procFrame = (Bitmap)_currFrame.Clone();
 
                     // make one time sure, there is a previous image
-                    excStep = 5;
+                    excStep = 6;
                     if ( _prevFrame == null ) {
                         _prevFrame = (Bitmap)_currFrame.Clone();
                     }
 
                     // process image
-                    excStep = 6;
+                    excStep = 7;
                     if ( detectMotion(now, _currFrame, _prevFrame) ) {
                         _motionsDetected++;
                     }
 
                     // show current, scaled and processed image in pictureBox, if not minimized
-                    excStep = 7;
+                    excStep = 8;
                     if ( this.WindowState != FormWindowState.Minimized ) {
                         if ( this.pictureBox.Image != null ) {
                             this.pictureBox.Image.Dispose();
                         }
-                        excStep = 8;
+                        excStep = 9;
                         this.pictureBox.Image = (Bitmap)_procFrame.Clone();
                     }
 
@@ -2071,9 +2072,9 @@ namespace MotionUVC
                     }
 
                     // finally make the current frame to the previous frame
-                    excStep = 9;
-                    _prevFrame.Dispose();
                     excStep = 10;
+                    _prevFrame.Dispose();
+                    excStep = 11;
                     _prevFrame = (Bitmap)_currFrame.Clone();
 
                     // get process time in ms
