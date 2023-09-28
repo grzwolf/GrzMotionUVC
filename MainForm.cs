@@ -25,6 +25,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Drawing.Design;
 using RestSharp;
+using File = System.IO.File;
 
 namespace MotionUVC
 {
@@ -2402,8 +2403,8 @@ namespace MotionUVC
             // a motion was detected
             if ( motionDetected ) {
 
-                // save hires & lores images
-                if ( Settings.SaveMotion || Settings.SaveSequences || _alarmSequence ) {
+                // save hires & lores images, post alarms
+                if ( Settings.SaveMotion || Settings.SaveSequences || _alarmSequence || _alarmNotify ) {
                     try {
                         // storage directory is built from nowStringPath, which already takes care about image save >19:00 into the next day folder
                         string filePath = System.IO.Path.Combine(Settings.StoragePath, nowStringPath);
@@ -2439,9 +2440,9 @@ namespace MotionUVC
                             // set flag
                             motionSaved = true;
                         }
-                        
-                        // consider motion sequence
-                        if ( Settings.SaveSequences || _alarmSequence ) {
+
+                        // conditions to maintain _motionsList
+                        if ( Settings.SaveSequences || _alarmSequence || _alarmNotify ) {
 
                             // save 'motion sequence data' either to list or add an info entry depending on 'motion save status'
                             if ( !motionSaved ) {
@@ -2489,9 +2490,16 @@ namespace MotionUVC
                                     _timerMotionSequenceActive.Start();
 
                                     // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
-                                    Task.Run(() => {
-                                        saveSequence();
-                                    });
+                                    if ( Settings.SaveSequences ) {
+                                        Task.Run(() => {
+                                            saveSequence();
+                                        });
+                                    }
+
+                                    // since motion sequence list is up to date, send ONE sequence photo via Telegram
+                                    if ( _alarmNotify ) {
+                                        sendAlarmNotification();
+                                    }
 
                                     // ASAP make a motion sequence video
                                     if ( _alarmSequence && _alarmSequenceAsap ) {
@@ -2637,70 +2645,79 @@ namespace MotionUVC
                     break;
                 }
             }
-            // since motion sequence list is up to date, send ONE sequence photo to Telegram
-            if ( _alarmNotify && Settings.SaveSequences ) {
-                // loop for consecutives                 
-                int consecutiveCount = 0;
-                int lastNdx = _motionsList.Count - 1;
-                for ( int i = lastNdx; i >= 0; i-- ) {
-                    if ( _motionsList[i].motionConsecutive ) {
-                        consecutiveCount++;
-                    } else {
-                        // don't continue, if sequence count is to small; have at least 10 consecutives in the most recent sequence
-                        if ( consecutiveCount < 10 ) {
-                            Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low #1: {0}", consecutiveCount));
-                            return;
-                        }
-                        break;
+        }
+
+        // send alarm notification image out of a seqeunce of motions
+        void sendAlarmNotification() {
+            // loop for consecutives                 
+            int consecutiveCount = 0;
+            int lastNdx = _motionsList.Count - 1;
+            for ( int i = lastNdx; i >= 0; i-- ) {
+                if ( _motionsList[i].motionConsecutive ) {
+                    consecutiveCount++;
+                } else {
+                    // don't continue, if sequence count is to small; have at least 10 consecutives in the most recent sequence
+                    if ( consecutiveCount < 10 ) {
+                        Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low #1: {0}", consecutiveCount));
+                        return;
                     }
+                    break;
                 }
-                // above loop breaks, if total list count is too small
-                if ( consecutiveCount < 10 ) {
-                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low #2: {0}", consecutiveCount));
-                    return;
-                }
-                // limit sending a sequence image to one image per 30s aka 60 images @ 2fps
-                if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
-                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo time to short"));
-                    return;
-                }
-                _lastSequenceSendTime = DateTime.Now;
-                // fire & forget
-                Task.Run(() => {
-                    try {
-                        // get last image from the sequence
-                        Bitmap image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
-                        // send image via Telegram
-                        IRestResponse response = _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
-                        if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest ) {
-                            AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #1.", Settings.TelegramNotifyReceiver), "Error", 5000);
-                            Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #1", Settings.TelegramNotifyReceiver));
-                            _notifyReceiver.Id = -1;
-                            Settings.TelegramNotifyReceiver = -1;
-                            Settings.KeepTelegramNotifyAction = false;
-                            _notifyText = "";
-                        }
-                        byte[] buffer = bitmapToByteArray(image);
-                        TeleSharp.Entities.Message msgResponse = _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
-                        if ( msgResponse.MessageId == 0 ) {
-                            AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #2.", Settings.TelegramNotifyReceiver), "Error", 5000);
-                            Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #2", Settings.TelegramNotifyReceiver));
-                            _notifyReceiver.Id = -1;
-                            Settings.TelegramNotifyReceiver = -1;
-                            Settings.KeepTelegramNotifyAction = false;
-                            _notifyText = "";
-                        }
-                        Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo {0} sent", lastNdx));
-                        if ( Settings.DebugMotions ) {
-                            Motion m = _motionsList[lastNdx];
-                            Logger.logMotionListEntry("alarm", lastNdx, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved, "alarm");
-                        }
-                        image.Dispose();
-                    } catch ( Exception ex ) {
-                        Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo {0} ex: {1}", lastNdx, ex.Message));
-                    }
-                });
             }
+            // above loop breaks, if total list count is too small
+            if ( consecutiveCount < 10 ) {
+                Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo count to low #2: {0}", consecutiveCount));
+                return;
+            }
+            // limit sending a sequence image to one image per 30s aka 60 images @ 2fps
+            if ( (DateTime.Now - _lastSequenceSendTime).TotalSeconds < 30 ) {
+                Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo time to short"));
+                return;
+            }
+            _lastSequenceSendTime = DateTime.Now;
+            // fire & forget
+            Task.Run(() => {
+                try {
+                    // get last image from the sequence
+                    Bitmap image = null;
+                    if ( File.Exists(_motionsList[lastNdx].fileNameMotion) ) {
+                        image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
+                    } else {
+                        image = (Bitmap)_motionsList[lastNdx].imageMotion.Clone();
+                    }
+                    if ( image == null ) {
+                        Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: image == null2"));
+                    }
+                    // send image via Telegram
+                    IRestResponse response = _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
+                    if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest ) {
+                        AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #1.", Settings.TelegramNotifyReceiver), "Error", 5000);
+                        Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #1", Settings.TelegramNotifyReceiver));
+                        _notifyReceiver.Id = -1;
+                        Settings.TelegramNotifyReceiver = -1;
+                        Settings.KeepTelegramNotifyAction = false;
+                        _notifyText = "";
+                    }
+                    byte[] buffer = bitmapToByteArray(image);
+                    TeleSharp.Entities.Message msgResponse = _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
+                    if ( msgResponse.MessageId == 0 ) {
+                        AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #2.", Settings.TelegramNotifyReceiver), "Error", 5000);
+                        Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #2", Settings.TelegramNotifyReceiver));
+                        _notifyReceiver.Id = -1;
+                        Settings.TelegramNotifyReceiver = -1;
+                        Settings.KeepTelegramNotifyAction = false;
+                        _notifyText = "";
+                    }
+                    Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo {0} sent", lastNdx));
+                    if ( Settings.DebugMotions ) {
+                        Motion m = _motionsList[lastNdx];
+                        Logger.logMotionListEntry("alarm", lastNdx, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved, "alarm");
+                    }
+                    image.Dispose();
+                } catch ( Exception ex ) {
+                    Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo {0} ex: {1}", lastNdx, ex.Message));
+                }
+            });
         }
 
         // supposed to reset an exception state, sometimes needed for pictureBox and 'red cross exception' <-- perhaps not needed when pictureBox is subclassed with try/catch OnPaint
