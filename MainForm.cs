@@ -981,6 +981,21 @@ namespace MotionUVC
                 FileInfo[] Files = d.GetFiles("*.jpg");
                 excStep = 5;
                 int fileCount = Files.Length;
+                // no files found
+                if ( fileCount == 0 ) {
+                    Logger.logTextLnU(DateTime.Now, "makeMotionVideo: no files");
+                    if ( !Settings.MakeVideoNow ) {
+                        // set done flag for making the today's video
+                        Settings.DailyVideoDone = true;
+                        IniFile ini = new IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+                        ini.IniWriteValue("MotionUVC", "DailyVideoDoneForToday", "True");
+                    }
+                    Settings.MakeVideoNow = false;
+                    _dailyVideoErrorCount = 0;
+                    _dailyVideoInProgress = false;
+                    _sendVideo = false;
+                    return;
+                }
                 excStep = 6;
                 int fileError = 0;
                 excStep = 7;
