@@ -2670,7 +2670,7 @@ namespace MotionUVC
         }
 
         // send alarm notification image out of a seqeunce of motions
-        void sendAlarmNotification() {
+        async void sendAlarmNotification() {
             // loop for consecutives                 
             int consecutiveCount = 0;
             int lastNdx = _motionsList.Count - 1;
@@ -2703,16 +2703,23 @@ namespace MotionUVC
                 Bitmap image = null;
                 if ( File.Exists(_motionsList[lastNdx].fileNameMotion) ) {
                     execStep = 1;
-                    image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
+                    try {
+                        image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
+                    } catch ( Exception exc ) {
+                        // file might be locked due to save operation, so try again one time
+                        execStep = 2;
+                        await Task.Delay(200);
+                        image = new Bitmap(_motionsList[lastNdx].fileNameMotion);
+                    }
                 } else {
-                    execStep = 2;
+                    execStep = 3;
                     image = (Bitmap)_motionsList[lastNdx].imageMotion.Clone();
                 }
                 if ( image == null ) {
-                    Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: image == null2"));
+                    Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: image == null"));
                 }
                 // send image via Telegram
-                execStep = 3;
+                execStep = 4;
                 IRestResponse response = _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
                 if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest ) {
                     AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #1.", Settings.TelegramNotifyReceiver), "Error", 5000);
@@ -2722,9 +2729,9 @@ namespace MotionUVC
                     Settings.KeepTelegramNotifyAction = false;
                     _notifyText = "";
                 }
-                execStep = 4;
-                byte[] buffer = bitmapToByteArray(image);
                 execStep = 5;
+                byte[] buffer = bitmapToByteArray(image);
+                execStep = 6;
                 TeleSharp.Entities.Message msgResponse = _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
                 if ( msgResponse.MessageId == 0 ) {
                     AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #2.", Settings.TelegramNotifyReceiver), "Error", 5000);
@@ -2734,16 +2741,16 @@ namespace MotionUVC
                     Settings.KeepTelegramNotifyAction = false;
                     _notifyText = "";
                 }
-                execStep = 6;
+                execStep = 7;
                 Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo {0} sent", lastNdx));
                 if ( Settings.DebugMotions ) {
                     Motion m = _motionsList[lastNdx];
                     Logger.logMotionListEntry("alarm", lastNdx, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved, "alarm");
                 }
-                execStep = 7;
+                execStep = 8;
                 image.Dispose();
             } catch ( Exception ex ) {
-                Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo {0} {1} ex: {2}", lastNdx, execStep, ex.Message));
+                Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo ex: {0} {1} {2} {3}", lastNdx, execStep, _motionsList[lastNdx].motionDateTime , ex.Message));
             }
         }
 
