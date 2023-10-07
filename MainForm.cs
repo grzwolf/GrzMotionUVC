@@ -3492,7 +3492,18 @@ namespace MotionUVC
         [CategoryAttribute("Telegram")]
         [Description("Keep Telegram alarm notification permanently")]
         [ReadOnly(false)]
-        public Boolean KeepTelegramNotifyAction { get; set; }
+        private Boolean keepTelegramNotifyAction;
+        public Boolean KeepTelegramNotifyAction {
+            get {
+                return keepTelegramNotifyAction;
+            }
+            set {
+                keepTelegramNotifyAction = value;
+                if ( TelegramNotifyReceiver == -1 ) {
+                    AutoMessageBox.Show("The 'TelegramNotifyReceiver' is not valid, alarm notification won't work unless it is changed.", "Warning", 5000);
+                }
+            }
+        }
         [CategoryAttribute("Telegram")]
         [Description("Telegram alarm notification receiver")]
         [ReadOnly(false)]
