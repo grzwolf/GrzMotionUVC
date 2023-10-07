@@ -464,19 +464,24 @@ namespace MotionUVC
                         _Bot.OnError += OnError;
                         _Bot.OnLiveTick += OnLiveTick;
                         this.timerCheckTelegramLiveTick.Start();
-                        // restart alarm notify if previously enabled
-                        _alarmNotify = false;
-                        _notifyReceiver = new MessageSender();
-                        _notifyReceiver.Id = -1;
-                        _notifyText = "";
-                        if ( Settings.KeepTelegramNotifyAction ) {
+                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
+                    } else {
+                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
+                    }
+                    // restart alarm notify if previously enabled
+                    _alarmNotify = false;
+                    _notifyReceiver = new MessageSender();
+                    _notifyReceiver.Id = -1;
+                    _notifyText = "";
+                    if ( Settings.KeepTelegramNotifyAction ) {
+                        if ( Settings.KeepTelegramNotifyAction && Settings.TelegramNotifyReceiver <= 0 ) {
+                            Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: 'TelegramNotifyReceiver' is not valid");
+                            AutoMessageBox.Show("The 'TelegramNotifyReceiver' is not valid, alarm notification won't work unless it is changed.", "Note", 5000);
+                        } else {
                             _alarmNotify = true;
                             _notifyReceiver.Id = Settings.TelegramNotifyReceiver;
                             _notifyText = " - permanent alarm notification active";
                         }
-                        Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
-                    } else {
-                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
                     }
                 } else {
                     if ( Settings.TelegramRestartAppCount >= 5 ) {
@@ -3492,18 +3497,7 @@ namespace MotionUVC
         [CategoryAttribute("Telegram")]
         [Description("Keep Telegram alarm notification permanently")]
         [ReadOnly(false)]
-        private Boolean keepTelegramNotifyAction;
-        public Boolean KeepTelegramNotifyAction {
-            get {
-                return keepTelegramNotifyAction;
-            }
-            set {
-                keepTelegramNotifyAction = value;
-                if ( TelegramNotifyReceiver == -1 ) {
-                    AutoMessageBox.Show("The 'TelegramNotifyReceiver' is not valid, alarm notification won't work unless it is changed.", "Warning", 5000);
-                }
-            }
-        }
+        public Boolean KeepTelegramNotifyAction { get; set; }
         [CategoryAttribute("Telegram")]
         [Description("Telegram alarm notification receiver")]
         [ReadOnly(false)]
@@ -3689,15 +3683,8 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "KeepTelegramNotifyAction", "False"), out tmpBool) ) {
                 KeepTelegramNotifyAction = tmpBool;
             }
-            TelegramNotifyReceiver = -1;
-            if ( KeepTelegramNotifyAction ) {
-                if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramNotifyReceiver", "-1"), out tmpInt) ) {
-                    TelegramNotifyReceiver = tmpInt;
-                    if ( TelegramNotifyReceiver == 0 || TelegramNotifyReceiver == -1 ) {
-                        KeepTelegramNotifyAction = false;
-                        Logger.logTextLnU(DateTime.Now, String.Format("fillPropertyGridFromIni(): invalid Id {0} #1", TelegramNotifyReceiver));
-                    }
-                }
+            if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramNotifyReceiver", "-1"), out tmpInt) ) {
+                TelegramNotifyReceiver = tmpInt;
             }
             // app restart count due to a Telegram malfunction
             if ( int.TryParse(ini.IniReadValue(iniSection, "TelegramRestartAppCount", "0"), out tmpInt) ) {
