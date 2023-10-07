@@ -110,7 +110,7 @@ namespace GrzTools
             sw.Stop();
             _busy = true;
             try {
-                if ( FullFileNameBase.Length == 0 ) {
+                if ( FullFileNameBase == null || FullFileNameBase.Length == 0 ) {
                     FullFileNameBase = Application.ExecutablePath;
                 }
                 string logFileName = FullFileNameBase + DateTime.Now.ToString("_yyyyMMdd", CultureInfo.InvariantCulture) + ".log";
