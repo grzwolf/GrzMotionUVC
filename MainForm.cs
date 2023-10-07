@@ -371,7 +371,7 @@ namespace MotionUVC
         private void MainForm_Shown(object sender, EventArgs e) {
 
 #if DEBUG
-            MessageBox.Show("Ok to start session", "DEBUG Session");
+            AutoMessageBox.Show("Ok to start session", "DEBUG Session", 60000);
 #endif
 
 
