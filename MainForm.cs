@@ -26,6 +26,9 @@ using System.Linq;
 using System.Drawing.Design;
 using RestSharp;
 using File = System.IO.File;
+// !! @compile time: needs "cvextern.dll" (not recognized as VS2019 reference) manually copied to release & debug folders !!
+// !! @run time    : H264 needs codec library openh264-2.3.1-win64.dll on stock Windows 10 to be copied to app folder !!
+using Emgu.CV; 
 
 namespace MotionUVC
 {
@@ -969,56 +972,88 @@ namespace MotionUVC
             string nowString = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             string path = System.IO.Path.Combine(Settings.StoragePath, nowString);
             System.IO.Directory.CreateDirectory(path);
-            string fileName = System.IO.Path.Combine(path, nowString + ".avi");
-            Accord.Video.FFMPEG.VideoFileWriter writer = null;
+            string fileName = "";
+            // folder with images to process
+            DirectoryInfo d = new DirectoryInfo(path);
+            FileInfo[] Files = d.GetFiles("*.jpg");
+            int fileCount = Files.Length;
+            // if no files were found
+            if ( fileCount == 0 ) {
+                Logger.logTextLnU(DateTime.Now, "makeMotionVideo: no files");
+                if ( !Settings.MakeVideoNow ) {
+                    // set done flag for making the today's video
+                    Settings.DailyVideoDone = true;
+                    IniFile ini = new IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+                    ini.IniWriteValue("MotionUVC", "DailyVideoDoneForToday", "True");
+                }
+                Settings.MakeVideoNow = false;
+                _dailyVideoErrorCount = 0;
+                _dailyVideoInProgress = false;
+                _sendVideo = false;
+                return;
+            }
+            // do the video generation work
             int excStep = 0;
-            try {
-                // video writer: !! needs both VC_redist.x86.exe and VC_redist.x64.exe installed on target PC !!
-                writer = new VideoFileWriter();
-                excStep = 1;
-                // create new video file
-                excStep = 2;
-                writer.Open(fileName, size.Width, size.Height, 25, VideoCodec.MPEG4);
-                excStep = 3;
-                // folder with images to process
-                DirectoryInfo d = new DirectoryInfo(path);
-                excStep = 4;
-                FileInfo[] Files = d.GetFiles("*.jpg");
-                excStep = 5;
-                int fileCount = Files.Length;
-                // no files found
-                if ( fileCount == 0 ) {
-                    Logger.logTextLnU(DateTime.Now, "makeMotionVideo: no files");
-                    if ( !Settings.MakeVideoNow ) {
-                        // set done flag for making the today's video
-                        Settings.DailyVideoDone = true;
-                        IniFile ini = new IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
-                        ini.IniWriteValue("MotionUVC", "DailyVideoDoneForToday", "True");
+            if ( Settings.VideoH264 ) {
+                // OpenCV with H264 --> works well on Android
+                try {
+                    // emgu wiki: https://www.emgu.com/wiki/index.php/X264_VFW requires video file extension .mp4 and backend ID for MSMF
+                    Backend[] backends = CvInvoke.WriterBackends;
+                    int backend_idx = 0;
+                    foreach ( Backend be in backends ) {
+                        if ( be.Name.Equals("MSMF") ) {
+                            backend_idx = be.ID;
+                            break;
+                        }
                     }
-                    Settings.MakeVideoNow = false;
-                    _dailyVideoErrorCount = 0;
-                    _dailyVideoInProgress = false;
-                    _sendVideo = false;
-                    return;
-                }
-                excStep = 6;
-                int fileError = 0;
-                excStep = 7;
-                Bitmap image;
-                excStep = 8;
-                foreach ( FileInfo file in Files ) {
-                    try {
-                        image = new Bitmap(file.FullName);
-                        writer.WriteVideoFrame(image);
-                        image.Dispose();
-                    } catch {
-                        fileError++;
-                        continue;
+                    excStep = 1;
+                    fileName = System.IO.Path.Combine(path, nowString + ".mp4");
+                    excStep = 2;
+                    char[] arr = "H264".ToCharArray();
+                    VideoWriter writerOpenCV = new VideoWriter(fileName, backend_idx, VideoWriter.Fourcc(arr[0], arr[1], arr[2], arr[3]), 30, Settings.ScaledImageSize, true);
+                    excStep = 3;
+                    // record Mat frame to video file
+                    if ( writerOpenCV != null ) {
+                        // loop images
+                        int fileError = 0;
+                        foreach ( FileInfo file in Files ) {
+                            try {
+                                excStep = 4;
+                                Mat mat = resizeBitmap(new Bitmap(file.FullName), Settings.ScaledImageSize).ToMat();
+                                excStep = 5;
+                                writerOpenCV.Write(mat);
+                                excStep = 6;
+                                mat.Dispose();
+                            } catch {
+                                fileError++;
+                                continue;
+                            }
+                        }
+                        writerOpenCV.Dispose();
+                        // if image files are locked
+                        if ( fileError == fileCount ) {
+                            Logger.logTextLnU(DateTime.Now, "makeMotionVideo OpenCV: too many file errors");
+                            if ( !Settings.MakeVideoNow ) {
+                                Settings.DailyVideoDone = false;
+                            }
+                            Settings.MakeVideoNow = false;
+                            _dailyVideoErrorCount++;
+                            _dailyVideoInProgress = false;
+                            _sendVideo = false;
+                            return;
+                        }
+                    } else {
+                        Logger.logTextLnU(DateTime.Now, String.Format("makeMotionVideo OpenCV: writerOpenCV == null  "));
                     }
-                }
-                // if image files are locked
-                if ( fileError == fileCount ) {
-                    Logger.logTextLnU(DateTime.Now, "makeMotionVideo: too many file errors");
+                } catch ( Exception ex ) {
+                    // update bot status
+                    if ( _sendVideo && _Bot != null && sender != null ) {
+                        _Bot.SendMessage(new SendMessageParams {
+                            ChatId = sender.Id.ToString(),
+                            Text = "Make video failed, try again later."
+                        });
+                    }
+                    Logger.logTextLnU(DateTime.Now, String.Format("makeMotionVideo OpenCV ex at step{0}: {1}", excStep, ex.Message));
                     if ( !Settings.MakeVideoNow ) {
                         Settings.DailyVideoDone = false;
                     }
@@ -1026,30 +1061,68 @@ namespace MotionUVC
                     _dailyVideoErrorCount++;
                     _dailyVideoInProgress = false;
                     _sendVideo = false;
-                    writer.Close();
                     return;
                 }
-                writer.Close();
-            } catch ( Exception ex ) {
-                // update bot status
-                if ( _sendVideo && _Bot != null && sender != null ) {
-                    _Bot.SendMessage(new SendMessageParams {
-                        ChatId = sender.Id.ToString(),
-                        Text = "Make video failed, try again later."
-                    });
-                }
-                Logger.logTextLnU(DateTime.Now, String.Format("makeMotionVideo ex at step{0}: {1}", excStep, ex.Message));
-                if ( !Settings.MakeVideoNow ) {
-                    Settings.DailyVideoDone = false;
-                }
-                Settings.MakeVideoNow = false;
-                _dailyVideoErrorCount++;
-                _dailyVideoInProgress = false;
-                _sendVideo = false;
-                if ( writer != null ) {
+
+            } else {
+                // FFMPEG with MPEG4 --> not suitable for Android 
+                fileName = System.IO.Path.Combine(path, nowString + ".avi");
+                Accord.Video.FFMPEG.VideoFileWriter writer = null;
+                try {
+                    // video writer: !! needs both VC_redist.x86.exe and VC_redist.x64.exe installed on target PC !!
+                    writer = new VideoFileWriter();
+                    excStep = 1;
+                    // create new video file
+                    excStep = 2;
+                    writer.Open(fileName, size.Width, size.Height, 25, VideoCodec.MPEG4);
+                    excStep = 3;
+                    int fileError = 0;
+                    Bitmap image;
+                    foreach ( FileInfo file in Files ) {
+                        try {
+                            image = new Bitmap(file.FullName);
+                            writer.WriteVideoFrame(image);
+                            image.Dispose();
+                        } catch {
+                            fileError++;
+                            continue;
+                        }
+                    }
+                    // if image files are locked
+                    if ( fileError == fileCount ) {
+                        Logger.logTextLnU(DateTime.Now, "makeMotionVideo FFMPEG: too many file errors");
+                        if ( !Settings.MakeVideoNow ) {
+                            Settings.DailyVideoDone = false;
+                        }
+                        Settings.MakeVideoNow = false;
+                        _dailyVideoErrorCount++;
+                        _dailyVideoInProgress = false;
+                        _sendVideo = false;
+                        writer.Close();
+                        return;
+                    }
                     writer.Close();
+                } catch ( Exception ex ) {
+                    // update bot status
+                    if ( _sendVideo && _Bot != null && sender != null ) {
+                        _Bot.SendMessage(new SendMessageParams {
+                            ChatId = sender.Id.ToString(),
+                            Text = "Make video failed, try again later."
+                        });
+                    }
+                    Logger.logTextLnU(DateTime.Now, String.Format("makeMotionVideo FFMPEG ex at step{0}: {1}", excStep, ex.Message));
+                    if ( !Settings.MakeVideoNow ) {
+                        Settings.DailyVideoDone = false;
+                    }
+                    Settings.MakeVideoNow = false;
+                    _dailyVideoErrorCount++;
+                    _dailyVideoInProgress = false;
+                    _sendVideo = false;
+                    if ( writer != null ) {
+                        writer.Close();
+                    }
+                    return;
                 }
-                return;
             }
             // distinguish regular video (== !_sendVideo) and video on demand (== _sendVideo)
             if ( !_sendVideo ) {
@@ -3459,6 +3532,10 @@ namespace MotionUVC
         [CategoryAttribute("Motion Save Strategy")]
         [ReadOnly(false)]
         public int NightThreshold { get; set; }
+        [ReadOnly(false)]
+        [Description("Enable this, if videos are sent to Android phones.")]
+        [CategoryAttribute("Video H264 for Android")]
+        public bool VideoH264 { get; set; }
         [CategoryAttribute("Motion Save Strategy")]
         [Description("Start making video, after closing the Settings dialog")]
         [Editor(typeof(ActionButtonVideoEditor), typeof(System.Drawing.Design.UITypeEditor))]
@@ -3628,6 +3705,10 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "DetectMotion", "False"), out tmpBool) ) {
                 DetectMotion = tmpBool;
             }
+            // video codec H264 is suitable for Android
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "VideoH264", "True"), out tmpBool) ) {
+                VideoH264 = tmpBool;
+            }
             // define darkness
             if ( int.TryParse(ini.IniReadValue(iniSection, "NightThreshold", "30"), out tmpInt) ) {
                 NightThreshold = tmpInt;
@@ -3790,6 +3871,8 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "SaveMotion", SaveMotion.ToString());
             // auto detect motion at app start
             ini.IniWriteValue(iniSection, "DetectMotion", DetectMotion.ToString());
+            // H264 video codec is suitable for Android
+            ini.IniWriteValue(iniSection, "VideoH264", VideoH264.ToString());
             // define darkness
             ini.IniWriteValue(iniSection, "NightThreshold", NightThreshold.ToString());
             // minimize app while motion detection
