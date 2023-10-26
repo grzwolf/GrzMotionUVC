@@ -1020,11 +1020,19 @@ namespace MotionUVC
                         foreach ( FileInfo file in Files ) {
                             try {
                                 excStep = 4;
-                                Mat mat = resizeBitmap(new Bitmap(file.FullName), Settings.ScaledImageSize).ToMat();
+                                Bitmap tmpBmp1 = new Bitmap(file.FullName);
                                 excStep = 5;
-                                writerOpenCV.Write(mat);
+                                Bitmap tmpBmp2 = resizeBitmap(tmpBmp1, Settings.ScaledImageSize);
                                 excStep = 6;
+                                Mat mat = tmpBmp2.ToMat();
+                                excStep = 7;
+                                writerOpenCV.Write(mat);
+                                excStep = 8;
                                 mat.Dispose();
+                                excStep = 9;
+                                tmpBmp2.Dispose();
+                                excStep = 10;
+                                tmpBmp1.Dispose();
                             } catch {
                                 fileError++;
                                 continue;
