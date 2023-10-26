@@ -1288,11 +1288,15 @@ namespace MotionUVC
                         // try to restart Telegram, it's not fully reliable - therefore a counter is introduced
                         _telegramLiveTickErrorCount++;
                         Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick: Telegram not active detected, now shut it down #{0}", _telegramLiveTickErrorCount));
-                        _Bot.OnMessage -= OnMessage;
-                        _Bot.OnError -= OnError;
-                        _Bot.OnLiveTick -= OnLiveTick;
-                        _Bot.Stop();
-                        _Bot = null;
+                        try {
+                            _Bot.OnMessage -= OnMessage;
+                            _Bot.OnError -= OnError;
+                            _Bot.OnLiveTick -= OnLiveTick;
+                            _Bot.Stop();
+                            _Bot = null;
+                        } catch ( Exception ex ) {
+                            Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick ex: {0}", ex.Message));
+                        }
                     }
                 }
             }
