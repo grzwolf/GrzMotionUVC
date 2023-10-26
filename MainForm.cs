@@ -873,6 +873,7 @@ namespace MotionUVC
                 _telegramRestartCounter = 0;
                 // reset 'Telegram malfunction forced app restart' counter
                 if ( Settings.TelegramRestartAppCount > 0 ) {
+                    Settings.TelegramRestartAppCount = 0;
                     AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
                     ini.IniWriteValue("MotionUVC", "TelegramRestartAppCount", "0");
                 }
