@@ -1033,7 +1033,8 @@ namespace MotionUVC
                                 tmpBmp2.Dispose();
                                 excStep = 10;
                                 tmpBmp1.Dispose();
-                            } catch {
+                            } catch (Exception ex) {
+                                Logger.logTextLn(DateTime.Now, String.Format("makeMotionVideo OpenCV exc @ step{0} {1}", excStep, ex.Message));
                                 fileError++;
                                 continue;
                             }
