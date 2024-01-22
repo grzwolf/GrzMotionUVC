@@ -1344,6 +1344,26 @@ namespace MotionUVC
             if ( string.IsNullOrEmpty(message.Text) || string.IsNullOrEmpty(baseStoragePath) ) {
                 return;
             }
+            // whitelist handling
+            if ( Settings.UseTelegramWhitelist ) {
+                bool callerIstAccepted = false;
+                string caller = sender.Id.ToString();
+                try {
+                    foreach ( var client in Settings.TelegramWhitelist ) {
+                        var clientId = client.Split(',')[1];
+                        if ( clientId == caller ) {
+                            callerIstAccepted = true;
+                            break;
+                        }
+                    }
+                } catch (Exception ex) {
+                    Logger.logTextLnU(DateTime.Now, "OnMessage: whitelist format error");
+                }
+                if ( !callerIstAccepted ) {
+                    Logger.logTextLnU(DateTime.Now, "caller rejected: " + caller);
+                    return;
+                }
+            }
             try {
                 if ( !string.IsNullOrEmpty(message.Text) )
                     switch ( message.Text.ToLower() ) {
@@ -2941,6 +2961,7 @@ namespace MotionUVC
             // add a separator
             AppendMenu(menu, 0xA00, 0, null);
             // add items with unique message ID
+            AppendMenu(menu, 0, 1237, "Telegram send 'test' to 1st whitelist entry");
             AppendMenu(menu, 0, 1236, "Loupe");
             AppendMenu(menu, 0, 1235, "Still Image");
             AppendMenu(menu, 0, 1234, "About MotionUVC");
@@ -2953,6 +2974,17 @@ namespace MotionUVC
 
             // WM_SYSCOMMAND is 0x112
             if ( m.Msg == WM_SYSCOMMAND ) {
+                // Telegram test message
+                if ( m.WParam.ToInt32() == 1237 ) {
+                    // send a test message
+                    if ( Settings.UseTelegramBot && _Bot != null && Settings.TelegramWhitelist.Count > 0 ) {
+                        string chatid = Settings.TelegramWhitelist[0].Split(',')[1];
+                        _Bot.SendMessage(new SendMessageParams {
+                            ChatId = chatid,
+                            Text = "test"
+                        });
+                    }
+                }
                 // loupe
                 if ( m.WParam.ToInt32() == 1236 ) {
                     Loupe.Loupe lp = new Loupe.Loupe();
@@ -3586,6 +3618,15 @@ namespace MotionUVC
         [ReadOnly(false)]
         public Boolean UseTelegramBot { get; set; }
         [CategoryAttribute("Telegram")]
+        [Description("Use Telegram whitelist")]
+        [ReadOnly(false)]
+        public Boolean UseTelegramWhitelist { get; set; }
+        [CategoryAttribute("Telegram")]
+        [DisplayName("Telegram whitelist")]
+        [Description("List of clients allowed to communicate with the bot")]
+        [ReadOnly(false)]
+        public BindingList<string> TelegramWhitelist { get; set; }
+        [CategoryAttribute("Telegram")]
         [Description("Keep Telegram alarm notification permanently")]
         [ReadOnly(false)]
         public Boolean KeepTelegramNotifyAction { get; set; }
@@ -3774,6 +3815,24 @@ namespace MotionUVC
             if ( bool.TryParse(ini.IniReadValue(iniSection, "UseTelegramBot", "False"), out tmpBool) ) {
                 UseTelegramBot = tmpBool;
             }
+            // get Telegram whitelist from INI
+            TelegramWhitelist = new BindingList<string>();
+            var ndx = 0;
+            while ( true ) {
+                string strFull = ini.IniReadValue("TelegramWhitelist", "client" + ndx++.ToString(), ",");
+                if ( strFull != "," ) {
+                    TelegramWhitelist.Add(strFull);
+                } else {
+                    break;
+                }
+            }
+            // use Telegram whitelist
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "UseTelegramWhitelist", "False"), out tmpBool) ) {
+                UseTelegramWhitelist = tmpBool;
+                if ( TelegramWhitelist.Count == 0 ) {
+                    UseTelegramWhitelist = false;
+                }
+            }
             // make Telegram alarm notification permanent
             if ( bool.TryParse(ini.IniReadValue(iniSection, "KeepTelegramNotifyAction", "False"), out tmpBool) ) {
                 KeepTelegramNotifyAction = tmpBool;
@@ -3911,6 +3970,15 @@ namespace MotionUVC
             ini.IniWriteValue(iniSection, "PingTestAddress", PingTestAddress);
             // use Telegram bot
             ini.IniWriteValue(iniSection, "UseTelegramBot", UseTelegramBot.ToString());
+            // write Telegram whitelist to INI
+            for ( int i = 0; i < TelegramWhitelist.Count; i++ ) {
+                ini.IniWriteValue("TelegramWhitelist", "client" + i.ToString(), TelegramWhitelist[i]);
+            }
+            // use Telegram whitelist
+            if ( TelegramWhitelist.Count == 0 ) {
+                UseTelegramWhitelist = false;
+            }
+            ini.IniWriteValue(iniSection, "UseTelegramWhitelist", UseTelegramWhitelist.ToString());
             // make Telegram alarm notification permanent
             ini.IniWriteValue(iniSection, "KeepTelegramNotifyAction", KeepTelegramNotifyAction.ToString());
             if ( KeepTelegramNotifyAction ) {
