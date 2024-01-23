@@ -2833,33 +2833,33 @@ namespace MotionUVC
                 // send image via Telegram
                 execStep = 4;
                 IRestResponse response = _Bot.SetCurrentAction(_notifyReceiver, ChatAction.UploadPhoto);
-                if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest ) {
-                    AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #1.", Settings.TelegramNotifyReceiver), "Error", 5000);
-                    Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #1", Settings.TelegramNotifyReceiver));
+                if ( response != null && response.StatusCode == System.Net.HttpStatusCode.BadRequest ) {
+                    execStep = 5;
+                    Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: bad request {0} #1", Settings.TelegramNotifyReceiver));
                     _notifyReceiver.Id = -1;
                     Settings.TelegramNotifyReceiver = -1;
                     Settings.KeepTelegramNotifyAction = false;
                     _notifyText = "";
                 }
-                execStep = 5;
-                byte[] buffer = bitmapToByteArray(image);
                 execStep = 6;
+                byte[] buffer = bitmapToByteArray(image);
+                execStep = 7;
                 TeleSharp.Entities.Message msgResponse = _Bot.SendPhoto(_notifyReceiver, buffer, "alarm", "alarm sequence photo");
-                if ( msgResponse.MessageId == 0 ) {
-                    AutoMessageBox.Show(String.Format("Telegram message receiver '{0}' is not valid #2.", Settings.TelegramNotifyReceiver), "Error", 5000);
+                if ( msgResponse != null && msgResponse.MessageId == 0 ) {
+                    execStep = 8;
                     Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo: invalid Id {0} #2", Settings.TelegramNotifyReceiver));
                     _notifyReceiver.Id = -1;
                     Settings.TelegramNotifyReceiver = -1;
                     Settings.KeepTelegramNotifyAction = false;
                     _notifyText = "";
                 }
-                execStep = 7;
+                execStep = 9;
                 Logger.logTextLn(DateTime.Now, String.Format("alarm sequence photo {0} sent", lastNdx));
                 if ( Settings.DebugMotions ) {
                     Motion m = _motionsList[lastNdx];
                     Logger.logMotionListEntry("alarm", lastNdx, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved, "alarm");
                 }
-                execStep = 8;
+                execStep = 10;
                 image.Dispose();
             } catch ( Exception ex ) {
                 Logger.logTextLnU(DateTime.Now, String.Format("alarm sequence photo ex: {0} {1} {2} {3}", lastNdx, execStep, _motionsList[lastNdx].motionDateTime , ex.Message));
