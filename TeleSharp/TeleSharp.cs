@@ -139,8 +139,37 @@ namespace TeleSharp
                     }
                 }
 
-                if ( (response?.Data == null) || !response.Data.Any() )
+                if ( (response?.Data == null) || !response.Data.Any() ) {
+                    // 
+                    // response.Content might contain some garbage and response?.Data == null: 
+                    //
+                    // this situation might block further message updates --> delete garbage
+                    if ( response?.Content != null && response?.Content.Length > 0 ) {
+                        // get the last update_id from response content
+                        string tmp = response?.Content;
+                        int ndxStart = tmp.LastIndexOf("\"update_id\":");
+                        if ( ndxStart != -1 ) {
+                            // update_id ends with a ,
+                            int ndxStop = tmp.Substring(ndxStart).IndexOf(",");
+                            if ( ndxStop != -1 ) {
+                                // obtain update_id
+                                string[] arr = tmp.Substring(ndxStart, ndxStop).Split(':');
+                                if ( arr.Length == 2 ) {
+                                    int update_id = -1;
+                                    if ( Int32.TryParse(arr[1], out update_id) ) {
+                                        // delete garbage similar to CLI command
+                                        // curl https://api.telegram.org/bot<bot_token>/getUpdates?offset=<last update_id + 1> 
+                                        WebRequest wr = WebRequest.Create("https://api.telegram.org/bot" + _authToken + "/getUpdates?offset=" + (update_id + 1).ToString());
+                                        wr.UseDefaultCredentials = true;
+                                        var result = wr.GetResponse();
+                                        wr.Abort();
+                                    }
+                                }
+                            }
+                        }
+                    }
                     return new List<Update>();
+                }
 
                 _lastFetchedMessageId = response.Data.Last().UpdateId;
                 //var rawData = response.Data.Select(d => d.Message);
