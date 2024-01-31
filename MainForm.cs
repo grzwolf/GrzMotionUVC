@@ -771,13 +771,17 @@ namespace MotionUVC
                         } catch ( Exception ) {; }
                     } else {
                         // restart Telegram
-                        _telegramRestartCounter++;
-                        Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick: Telegram restart #{0} of 5", _telegramRestartCounter));
-                        _telegramOnErrorCount = 0;
-                        _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
-                        _Bot.OnMessage += OnMessage;
-                        _Bot.OnError += OnError;
-                        _Bot.OnLiveTick += OnLiveTick;
+                        try {
+                            _telegramRestartCounter++;
+                            Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick: Telegram restart #{0} of 5", _telegramRestartCounter));
+                            _telegramOnErrorCount = 0;
+                            _Bot = new TeleSharp.TeleSharp(Settings.BotAuthenticationToken);
+                            _Bot.OnMessage += OnMessage;
+                            _Bot.OnError += OnError;
+                            _Bot.OnLiveTick += OnLiveTick;
+                        } catch( Exception ex ) {
+                            Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick exception: {0}", ex.Message));
+                        }
                     }
                 }
 
