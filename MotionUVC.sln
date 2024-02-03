@@ -6,11 +6,14 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MotionUVC", "MotionUVC.csproj", "{FDE34EE6-430B-4516-977F-9E51301D5B5C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0ABC1A22-37A0-4478-A03F-2D796CAD9DB4} = {0ABC1A22-37A0-4478-A03F-2D796CAD9DB4}
+		{26CD2CE7-FF63-4669-83B0-7D9C8F3408EE} = {26CD2CE7-FF63-4669-83B0-7D9C8F3408EE}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeleSharp", "TeleSharp\TeleSharp.csproj", "{0ABC1A22-37A0-4478-A03F-2D796CAD9DB4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Video.DirectShow", "Video.DirectShow\Video.DirectShow.csproj", "{26CD2CE7-FF63-4669-83B0-7D9C8F3408EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Logger", "Logger\Logger.csproj", "{BAA50B91-6829-44FE-8318-FC1A9367D923}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,6 +61,18 @@ Global
 		{26CD2CE7-FF63-4669-83B0-7D9C8F3408EE}.Release|x64.Build.0 = Release|x64
 		{26CD2CE7-FF63-4669-83B0-7D9C8F3408EE}.Release|x86.ActiveCfg = Release|x86
 		{26CD2CE7-FF63-4669-83B0-7D9C8F3408EE}.Release|x86.Build.0 = Release|x86
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Debug|x64.Build.0 = Debug|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Debug|x86.Build.0 = Debug|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Release|x64.ActiveCfg = Release|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Release|x64.Build.0 = Release|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Release|x86.ActiveCfg = Release|Any CPU
+		{BAA50B91-6829-44FE-8318-FC1A9367D923}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

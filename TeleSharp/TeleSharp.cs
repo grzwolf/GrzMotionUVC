@@ -10,9 +10,9 @@ using TeleSharp.Entities.Inline;
 using TeleSharp.Entities.SendEntities;
 using TeleSharp.Properties;
 using File = TeleSharp.Entities.File;
+using Logging;
 
-namespace TeleSharp
-{
+namespace TeleSharp {
     public class TeleSharp
     {
         private DateTime _lastResponseDateTime;
@@ -75,6 +75,8 @@ namespace TeleSharp
             _connectionFailCount = 0;
             _task = new Task(HandleMessages);
             _task.Start();
+
+            Logger.logTextLnU(DateTime.Now, "TeleSharp: started");
         }
 
         public void Stop()
@@ -167,6 +169,7 @@ namespace TeleSharp
                                         wr.UseDefaultCredentials = true;
                                         var result = wr.GetResponse();
                                         wr.Abort();
+                                        Logger.logTextLnU(DateTime.Now, "PollMessages: removed garbage");
                                     }
                                 }
                             }

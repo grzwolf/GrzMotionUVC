@@ -28,7 +28,8 @@ using RestSharp;
 using File = System.IO.File;
 // !! @compile time: needs "cvextern.dll" (not recognized as VS2019 reference) manually copied to release & debug folders !!
 // !! @run time    : H264 needs codec library openh264-2.3.1-win64.dll on stock Windows 10 to be copied to app folder !!
-using Emgu.CV; 
+using Emgu.CV;
+using Logging;
 
 namespace MotionUVC
 {
