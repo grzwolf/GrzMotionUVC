@@ -195,8 +195,15 @@ namespace TeleSharp {
         /// </summary>
         private async void HandleMessages()
         {
+            bool firstLoop = true;
+
             while (_runHandleMessagesLoop)
             {
+                if ( firstLoop ) {
+                    Logger.logTextLnU(DateTime.Now, "HandleMessages: messages loop entered");
+                    firstLoop = false;
+                }
+
                 OnLiveTick?.Invoke(DateTime.Now);
 
                 var updates = await PollMessages();

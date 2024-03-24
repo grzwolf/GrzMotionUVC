@@ -780,6 +780,7 @@ namespace MotionUVC
                             _Bot.OnMessage += OnMessage;
                             _Bot.OnError += OnError;
                             _Bot.OnLiveTick += OnLiveTick;
+                            this.timerCheckTelegramLiveTick.Start();
                         } catch( Exception ex ) {
                             Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick exception: {0}", ex.Message));
                         }
@@ -1278,7 +1279,7 @@ namespace MotionUVC
             } while ( runPing );
         }
 
-        // Telegram connector provides a live tick info, this timer tick shall act, if Telegram live tick info fails multiple time
+        // Telegram connector provides a 'live tick info', this timer always monitors such 'live tick info' 
         private void timerCheckTelegramLiveTick_Tick(object sender, EventArgs e) {
             if ( _Bot != null ) {
                 TimeSpan span = DateTime.Now - _connectionLiveTick;
@@ -1309,6 +1310,7 @@ namespace MotionUVC
                             _Bot.OnLiveTick -= OnLiveTick;
                             _Bot.Stop();
                             _Bot = null;
+                            this.timerCheckTelegramLiveTick.Stop();
                         } catch ( Exception ex ) {
                             Logger.logTextLnU(DateTime.Now, String.Format("timerCheckTelegramLiveTick_Tick ex: {0}", ex.Message));
                         }
@@ -1335,6 +1337,7 @@ namespace MotionUVC
                 _Bot.OnLiveTick -= OnLiveTick;
                 _Bot.Stop();
                 _Bot = null;
+                this.timerCheckTelegramLiveTick.Stop();
                 Logger.logTextLnU(DateTime.Now, "OnError: Telegram connect error, now shut down");
             } else {
                 Logger.logTextLnU(DateTime.Now, "OnError: _Bot == null, but OnError still active");
