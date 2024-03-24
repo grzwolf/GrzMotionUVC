@@ -1509,9 +1509,19 @@ namespace MotionUVC
                                     break;
                                 }
                                 _Bot.SetCurrentAction(sender, ChatAction.UploadPhoto);
-                                byte[] buffer = bitmapToByteArray(_currFrame);
-                                _Bot.SendPhoto(sender, buffer, "snapshot", "image");
-                                Logger.logTextLnU(DateTime.Now, String.Format("image sent to: {0}", sender.Id.ToString()));
+                                try {
+                                    Bitmap tmp = (Bitmap)_currFrame.Clone();
+                                    byte[] buffer = bitmapToByteArray(tmp);
+                                    tmp.Dispose();
+                                    _Bot.SendPhoto(sender, buffer, "snapshot", "image");
+                                    Logger.logTextLnU(DateTime.Now, String.Format("image sent to: {0}", sender.Id.ToString()));
+                                } catch (Exception e) {
+                                    Logger.logTextLnU(DateTime.Now, "EXCEPTION /image: " + e.Message);
+                                    _Bot.SendMessage(new SendMessageParams {
+                                        ChatId = sender.Id.ToString(),
+                                        Text = "image capture failed",
+                                    });
+                                }
                                 break;
                             }
                         default: {
