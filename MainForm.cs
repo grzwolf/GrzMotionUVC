@@ -469,8 +469,11 @@ namespace MotionUVC
                         _Bot.OnLiveTick += OnLiveTick;
                         this.timerCheckTelegramLiveTick.Start();
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
+                        // send master message
+                        TelegramSendMasterMessage("Telegram bot activated");
                     } else {
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
+                        TelegramSendMasterMessage("Telegram bot was already activate");
                     }
                     // restart alarm notify if previously enabled
                     _alarmNotify = false;
@@ -552,6 +555,17 @@ namespace MotionUVC
             Settings.ExposureVal = this.hScrollBarExposure.Value;
             Settings.ExposureMin = this.hScrollBarExposure.Minimum;
             Settings.ExposureMax = this.hScrollBarExposure.Maximum;
+        }
+
+        // send a message to master
+        void TelegramSendMasterMessage(String message) {
+            if ( Settings.UseTelegramBot && _Bot != null && Settings.TelegramWhitelist.Count > 0 && Settings.TelegramSendMaster ) {
+                string chatid = Settings.TelegramWhitelist[0].Split(',')[1];
+                _Bot.SendMessage(new SendMessageParams {
+                    ChatId = chatid,
+                    Text = message
+                });
+            }
         }
 
         // update today's motions counters; perhaps useful, if app is restarted during the day
@@ -2994,14 +3008,8 @@ namespace MotionUVC
             if ( m.Msg == WM_SYSCOMMAND ) {
                 // Telegram test message
                 if ( m.WParam.ToInt32() == 1237 ) {
-                    // send a test message
-                    if ( Settings.UseTelegramBot && _Bot != null && Settings.TelegramWhitelist.Count > 0 ) {
-                        string chatid = Settings.TelegramWhitelist[0].Split(',')[1];
-                        _Bot.SendMessage(new SendMessageParams {
-                            ChatId = chatid,
-                            Text = "test"
-                        });
-                    }
+                    // send a test message to master
+                    TelegramSendMasterMessage("test");
                 }
                 // loupe
                 if ( m.WParam.ToInt32() == 1236 ) {
@@ -3645,6 +3653,10 @@ namespace MotionUVC
         [ReadOnly(false)]
         public BindingList<string> TelegramWhitelist { get; set; }
         [CategoryAttribute("Telegram")]
+        [Description("Whitelist top member receives status messages")]
+        [ReadOnly(false)]
+        public Boolean TelegramSendMaster { get; set; }
+        [CategoryAttribute("Telegram")]
         [Description("Keep Telegram alarm notification permanently")]
         [ReadOnly(false)]
         public Boolean KeepTelegramNotifyAction { get; set; }
@@ -3851,6 +3863,13 @@ namespace MotionUVC
                     UseTelegramWhitelist = false;
                 }
             }
+            // use Telegram master message
+            if ( bool.TryParse(ini.IniReadValue(iniSection, "TelegramSendMaster", "False"), out tmpBool) ) {
+                TelegramSendMaster = tmpBool;
+                if ( TelegramWhitelist.Count == 0 ) {
+                    TelegramSendMaster = false;
+                }
+            }
             // make Telegram alarm notification permanent
             if ( bool.TryParse(ini.IniReadValue(iniSection, "KeepTelegramNotifyAction", "False"), out tmpBool) ) {
                 KeepTelegramNotifyAction = tmpBool;
@@ -3997,6 +4016,11 @@ namespace MotionUVC
                 UseTelegramWhitelist = false;
             }
             ini.IniWriteValue(iniSection, "UseTelegramWhitelist", UseTelegramWhitelist.ToString());
+            // use Telegram master message
+            if ( TelegramWhitelist.Count == 0 ) {
+                TelegramSendMaster = false;
+            }
+            ini.IniWriteValue(iniSection, "TelegramSendMaster", TelegramSendMaster.ToString());
             // make Telegram alarm notification permanent
             ini.IniWriteValue(iniSection, "KeepTelegramNotifyAction", KeepTelegramNotifyAction.ToString());
             if ( KeepTelegramNotifyAction ) {
