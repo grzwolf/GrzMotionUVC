@@ -392,9 +392,16 @@ namespace MotionUVC
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
             Logger.logTextLnU(DateTime.Now, String.Format("{0} {1}", assembly.FullName, fvi.FileVersion));
-            // distinguish between regular app start and a restart after app crash 
+            // distinguish between regular app start and a restart after app crash
+            bool appStartAfterCrash = false;
             if ( bool.Parse(ini.IniReadValue("MotionUVC", "AppCrash", "False")) ) {
-                Logger.logTextLnU(DateTime.Now, "App was restarted after crash");
+                appStartAfterCrash = true;
+                // distinguish between app crash and OS crash
+                if ( (DateTime.Now - getOsBootTime()).TotalMinutes < 15 ) {
+                    Logger.logTextLnU(DateTime.Now, "App was restarted after unscheduled OS reboot");
+                } else {
+                    Logger.logTextLnU(DateTime.Now, "App was restarted after crash");
+                }
             } else {
                 Logger.logTextLn(DateTime.Now, "App start regular");
             }
@@ -402,11 +409,10 @@ namespace MotionUVC
             ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             // set app properties according to settings; in case ini craps out, delete it and begin from scratch with defaults
             try {
-                updateAppPropertiesFromSettings();
+                updateAppPropertiesFromSettings(appStartAfterCrash);
             } catch {
                 System.IO.File.Delete(System.Windows.Forms.Application.ExecutablePath + ".ini");
                 Settings.fillPropertyGridFromIni();
-                updateAppPropertiesFromSettings();
             }
         }
 
@@ -418,7 +424,7 @@ namespace MotionUVC
         }
 
         // update app from settings
-        void updateAppPropertiesFromSettings() {
+        void updateAppPropertiesFromSettings(bool appStartAfterCrash = false) {
             // UI app layout
             this.Size = Settings.FormSize;
             // get all display ranges (multiple monitors) and check, if desired location fits in
@@ -470,6 +476,14 @@ namespace MotionUVC
                         this.timerCheckTelegramLiveTick.Start();
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
                         // send master message
+                        if ( appStartAfterCrash ) {
+                            // distinguish between app crash and OS crash
+                            if ( (DateTime.Now - getOsBootTime()).TotalMinutes < 15 ) {
+                                TelegramSendMasterMessage("app restart after unscheduled OS reboot");
+                            } else {
+                                TelegramSendMasterMessage("app restart after crash");
+                            }
+                        }
                         TelegramSendMasterMessage("Telegram bot activated");
                     } else {
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
@@ -566,6 +580,13 @@ namespace MotionUVC
                     Text = message
                 });
             }
+        }
+
+        // get OS boot time
+        [DllImport("Kernel32.dll")]
+        static extern long GetTickCount64();
+        DateTime getOsBootTime() {
+            return DateTime.Now.AddMilliseconds(-(double)GetTickCount64());
         }
 
         // update today's motions counters; perhaps useful, if app is restarted during the day
