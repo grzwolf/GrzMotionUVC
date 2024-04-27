@@ -2672,12 +2672,13 @@ namespace MotionUVC
                                     _timerMotionSequenceActive.Stop();
                                     _timerMotionSequenceActive.Start();
 
+                                    // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
+                                    if ( Settings.SaveSequences ) {
+                                        saveSequence();
+                                    }
+
                                     // fire & forget
                                     Task.Run(() => {
-                                        // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
-                                        if ( Settings.SaveSequences ) {
-                                            saveSequence();
-                                        }
                                         // since motion sequence list is up to date, send ONE sequence photo via Telegram
                                         if ( _alarmNotify ) {
                                             sendAlarmNotification();
@@ -2793,12 +2794,15 @@ namespace MotionUVC
                     // further checks
                     if ( _motionsList[i].motionConsecutive && !_motionsList[i].motionSaved ) {
                         // save to disk may take some time
+                        int execStep = 0;
                         try {
                             // save hires, inc counter, set 'save flag' & dispose
                             _motionsList[i].imageMotion.Save(_motionsList[i].fileNameMotion, System.Drawing.Imaging.ImageFormat.Jpeg);
+                            execStep = 1;
                             _consecutivesDetected++;
                             _motionsList[i].motionSaved = true;
                             _motionsList[i].imageMotion.Dispose();
+                            execStep = 2;
                             _motionsList[i].imageMotion = null;
                             // debug motion list
                             if ( Settings.DebugMotions ) {
@@ -2813,7 +2817,25 @@ namespace MotionUVC
                                 _motionsList[i].imageProc = null;
                             }
                         } catch ( Exception ex ) {
-                            Logger.logTextLnU(DateTime.Now, "saveSequence ex: " + ex.Message);
+                            Logger.logTextLnU(DateTime.Now, "saveSequence ex: " + ex.Message + " execStep" + execStep.ToString() + " " + _motionsList[i].fileNameMotion);
+                            if ( execStep == 0 ) {
+                                // retry to save hires but make sure, the exception wasn't false flagged
+                                try {
+                                    if ( !System.IO.File.Exists(_motionsList[i].fileNameMotion) ) {
+                                        Bitmap bmp = (Bitmap)_motionsList[i].imageMotion.Clone();
+                                        bmp.Save(_motionsList[i].fileNameMotion, System.Drawing.Imaging.ImageFormat.Jpeg);
+                                        _consecutivesDetected++;
+                                        _motionsList[i].motionSaved = true;
+                                        _motionsList[i].imageMotion.Dispose();
+                                        _motionsList[i].imageMotion = null;
+                                        bmp.Dispose();
+                                    } else {
+                                        Logger.logTextLnU(DateTime.Now, "file was already saved: " + _motionsList[i].fileNameMotion);
+                                    }
+                                } catch ( Exception ex2 ) {
+                                    Logger.logTextLnU(DateTime.Now, "saveSequence ex2: " + ex2.Message);
+                                }
+                            }
                         }
                     } else {
                         // applies to existing, but already saved images - ideally this should not happen 
