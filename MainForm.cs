@@ -126,6 +126,7 @@ namespace MotionUVC
         int _telegramLiveTickErrorCount = 0;
         int _telegramRestartCounter = 0;
         bool _runPing = false;
+        List<string> telegramMasterMessageCache = new List<string>();        // msg collector, sent latest when connection is established
 
         long ONE_GB =  1000000000;                                            // constants for file delete  
         long TWO_GB =  2000000000;                                            
@@ -393,14 +394,14 @@ namespace MotionUVC
             System.Diagnostics.FileVersionInfo fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(assembly.Location);
             Logger.logTextLnU(DateTime.Now, String.Format("{0} {1}", assembly.FullName, fvi.FileVersion));
             // distinguish between regular app start and a restart after app crash
-            bool appStartAfterCrash = false;
             if ( bool.Parse(ini.IniReadValue("MotionUVC", "AppCrash", "False")) ) {
-                appStartAfterCrash = true;
-                // distinguish between app crash and OS crash
+                // distinguish between app crash and OS crash + store msg in telegramMasterMessageCache 
                 if ( (DateTime.Now - getOsBootTime()).TotalMinutes < 15 ) {
                     Logger.logTextLnU(DateTime.Now, "App was restarted after unscheduled OS reboot");
+                    telegramMasterMessageCache.Add("app restart after unscheduled OS reboot");
                 } else {
                     Logger.logTextLnU(DateTime.Now, "App was restarted after crash");
+                    telegramMasterMessageCache.Add("app restart after crash");
                 }
             } else {
                 Logger.logTextLn(DateTime.Now, "App start regular");
@@ -409,7 +410,7 @@ namespace MotionUVC
             ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             // set app properties according to settings; in case ini craps out, delete it and begin from scratch with defaults
             try {
-                updateAppPropertiesFromSettings(appStartAfterCrash);
+                updateAppPropertiesFromSettings();
             } catch {
                 System.IO.File.Delete(System.Windows.Forms.Application.ExecutablePath + ".ini");
                 Settings.fillPropertyGridFromIni();
@@ -424,7 +425,7 @@ namespace MotionUVC
         }
 
         // update app from settings
-        void updateAppPropertiesFromSettings(bool appStartAfterCrash = false) {
+        void updateAppPropertiesFromSettings() {
             // UI app layout
             this.Size = Settings.FormSize;
             // get all display ranges (multiple monitors) and check, if desired location fits in
@@ -475,19 +476,15 @@ namespace MotionUVC
                         _Bot.OnLiveTick += OnLiveTick;
                         this.timerCheckTelegramLiveTick.Start();
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram bot activated");
-                        // send master message
-                        if ( appStartAfterCrash ) {
-                            // distinguish between app crash and OS crash
-                            if ( (DateTime.Now - getOsBootTime()).TotalMinutes < 15 ) {
-                                TelegramSendMasterMessage("app restart after unscheduled OS reboot");
-                            } else {
-                                TelegramSendMasterMessage("app restart after crash");
-                            }
+                        // send cached master messages
+                        while ( telegramMasterMessageCache.Count > 0 ) {
+                            TelegramSendMasterMessage(telegramMasterMessageCache[0]);
+                            telegramMasterMessageCache.RemoveAt(0);
                         }
                         TelegramSendMasterMessage("Telegram bot activated");
                     } else {
                         Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram is already active");
-                        TelegramSendMasterMessage("Telegram bot was already activate");
+                        TelegramSendMasterMessage("Telegram bot was already active");
                     }
                     // restart alarm notify if previously enabled
                     _alarmNotify = false;
@@ -816,6 +813,11 @@ namespace MotionUVC
                             _Bot.OnError += OnError;
                             _Bot.OnLiveTick += OnLiveTick;
                             this.timerCheckTelegramLiveTick.Start();
+                            // send so far unsent cached master messages
+                            while ( telegramMasterMessageCache.Count > 0 ) {
+                                TelegramSendMasterMessage(telegramMasterMessageCache[0]);
+                                telegramMasterMessageCache.RemoveAt(0);
+                            }
                         } catch( Exception ex ) {
                             Logger.logTextLnU(DateTime.Now, String.Format("timerFlowControl_Tick exception: {0}", ex.Message));
                         }
