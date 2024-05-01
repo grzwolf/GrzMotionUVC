@@ -362,26 +362,7 @@ namespace MotionUVC
             // get settings from INI
             Settings.fillPropertyGridFromIni();
 
-            // before processing, images will be scaled down to a real image size
-            Settings.ScaledImageSize = new Size(800, 600);                               
-
-            // IMessageFilter - an encapsulated message filter
-            // - also needed: class declaration "public partial class MainForm: Form, IMessageFilter"
-            // - also needed: event handler "public bool PreFilterMessage( ref Message m )"
-            // - also needed: Application.RemoveMessageFilter(this) when closing this form
-            Application.AddMessageFilter(this);
-        }
-
-        // called when MainForm is finally shown
-        private void MainForm_Shown(object sender, EventArgs e) {
-
-#if DEBUG
-            AutoMessageBox.Show("Ok to start session", "DEBUG Session", 60000);
-#endif
-
-
             // log start
-            AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
             Settings.WriteLogfile = bool.Parse(ini.IniReadValue("MotionUVC", "WriteLogFile", "False"));
             Logger.WriteToLog = Settings.WriteLogfile;
             string path = ini.IniReadValue("MotionUVC", "StoragePath", Application.StartupPath + "\\");
@@ -406,7 +387,26 @@ namespace MotionUVC
             } else {
                 Logger.logTextLn(DateTime.Now, "App start regular");
             }
-            // assume an app crash as default behavior: this flag is reset to False, if app closes the normal way
+
+            // before processing, images will be scaled down to a real image size
+            Settings.ScaledImageSize = new Size(800, 600);                               
+
+            // IMessageFilter - an encapsulated message filter
+            // - also needed: class declaration "public partial class MainForm: Form, IMessageFilter"
+            // - also needed: event handler "public bool PreFilterMessage( ref Message m )"
+            // - also needed: Application.RemoveMessageFilter(this) when closing this form
+            Application.AddMessageFilter(this);
+        }
+
+        // called when MainForm is finally shown
+        private void MainForm_Shown(object sender, EventArgs e) {
+
+#if DEBUG
+            AutoMessageBox.Show("Ok to start session", "DEBUG Session", 60000);
+#endif
+
+            AppSettings.IniFile ini = new AppSettings.IniFile(System.Windows.Forms.Application.ExecutablePath + ".ini");
+            // from now on assume an app crash as default behavior: this flag is reset to False, if app closes the normal way
             ini.IniWriteValue("MotionUVC", "AppCrash", "True");
             // set app properties according to settings; in case ini craps out, delete it and begin from scratch with defaults
             try {
@@ -463,7 +463,13 @@ namespace MotionUVC
                 Settings.PingOk = false;
                 Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: ping failed");
                 if ( Settings.UseTelegramBot ) {
-                    Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram not activated due to ping fail");
+                    if ( _Bot == null ) {
+                        Logger.logTextLnU(DateTime.Now, "updateAppPropertiesFromSettings: Telegram not activated due to ping fail");
+                    } else {
+                        // it might happen, that timerFlowControl jumped in earlier
+                        Logger.logTextLn(DateTime.Now, "updateAppPropertiesFromSettings: Telegram obviously activated by timerFlowControl");
+                        TelegramSendMasterMessage("Telegram obviously activated by timerFlowControl");
+                    }
                 }
             }
             if ( Settings.PingOk ) {
