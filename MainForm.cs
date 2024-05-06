@@ -68,6 +68,7 @@ namespace MotionUVC
             public Bitmap imageProc;
             public bool motionSaved;
             public bool motionConsecutive { get; set; }
+            public bool bitmapLocked { get; set; }
             public Motion(String fileNameMotion, DateTime motionDateTime) {
                 this.fileNameMotion = fileNameMotion;
                 this.fileNameProc = "";
@@ -76,6 +77,7 @@ namespace MotionUVC
                 this.imageMotion = null;
                 this.imageProc = null;
                 this.motionSaved = true;
+                this.bitmapLocked = false;
             }
             public Motion(String fileNameMotion, DateTime motionDateTime, Bitmap image, String fileNameProc, Bitmap imageProc) {
                 this.fileNameMotion = fileNameMotion;
@@ -85,6 +87,7 @@ namespace MotionUVC
                 this.imageMotion = (Bitmap)image.Clone();
                 this.imageProc = imageProc != null ? (Bitmap)imageProc.Clone() : null;
                 this.motionSaved = false;
+                this.bitmapLocked = false;
             }
         }
         List<Motion> _motionsList = new List<Motion>();                      // list of Motion, which are motion sequences if 'consecutive' is true
@@ -2678,13 +2681,12 @@ namespace MotionUVC
                                     _timerMotionSequenceActive.Stop();
                                     _timerMotionSequenceActive.Start();
 
-                                    // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
-                                    if ( Settings.SaveSequences ) {
-                                        saveSequence();
-                                    }
-
                                     // fire & forget
                                     Task.Run(() => {
+                                        // save a consecutive image to disk (only @ 1st enter it's a sequence of three images)
+                                        if ( Settings.SaveSequences ) {
+                                            saveSequence();
+                                        }
                                         // since motion sequence list is up to date, send ONE sequence photo via Telegram
                                         if ( _alarmNotify ) {
                                             sendAlarmNotification();
@@ -2797,8 +2799,10 @@ namespace MotionUVC
                 }
                 // only consider existing images
                 if ( _motionsList[i].imageMotion != null ) {
-                    // further checks
-                    if ( _motionsList[i].motionConsecutive && !_motionsList[i].motionSaved ) {
+                    // further checks: consecutive + not saved + not locked
+                    if ( _motionsList[i].motionConsecutive && !_motionsList[i].motionSaved && !_motionsList[i].bitmapLocked ) {
+                        // set bitmap lock bit to prevent task overrun condition
+                        _motionsList[i].bitmapLocked = true;
                         // save to disk may take some time
                         int execStep = 0;
                         try {
@@ -2815,6 +2819,8 @@ namespace MotionUVC
                                 Motion m = _motionsList[i];
                                 Logger.logMotionListEntry("saved", i, m.imageMotion != null, m.motionConsecutive, m.motionDateTime, m.motionSaved);
                             }
+                            // reset bitmap lock bit
+                            _motionsList[i].bitmapLocked = false;
                             // save lores if existing
                             if ( _motionsList[i].imageProc != null ) {
                                 System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_motionsList[i].fileNameProc));
@@ -2835,6 +2841,8 @@ namespace MotionUVC
                                         _motionsList[i].imageMotion.Dispose();
                                         _motionsList[i].imageMotion = null;
                                         bmp.Dispose();
+                                        // reset bitmap lock bit
+                                        _motionsList[i].bitmapLocked = false;
                                     } else {
                                         Logger.logTextLnU(DateTime.Now, "file was already saved: " + _motionsList[i].fileNameMotion);
                                     }
@@ -2857,6 +2865,11 @@ namespace MotionUVC
                             _motionsList[i].imageProc.Dispose();
                             _motionsList[i].imageProc = null;
                         }
+                        // detect task overrun
+                        if ( _motionsList[i].bitmapLocked ) {
+                            Logger.logTextLnU(DateTime.Now, "saveSequence locked bitmap detected " + _motionsList[i].fileNameMotion);
+                        }
+
                     }
                 } else {
                     break;
