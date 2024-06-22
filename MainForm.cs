@@ -3711,12 +3711,12 @@ namespace MotionUVC
         [ReadOnly(false)]
         public Boolean UseTelegramBot { get; set; }
         [CategoryAttribute("Telegram")]
-        [Description("Use Telegram whitelist")]
+        [Description("Use Telegram whitelist, needs whitelisted clients")]
         [ReadOnly(false)]
         public Boolean UseTelegramWhitelist { get; set; }
         [CategoryAttribute("Telegram")]
         [DisplayName("Telegram whitelist")]
-        [Description("List of clients allowed to communicate with the bot")]
+        [Description("Clients list allowed to communicate with the bot, use format: '<readable name>,notifier'")]
         [ReadOnly(false)]
         public BindingList<string> TelegramWhitelist { get; set; }
         [CategoryAttribute("Telegram")]
