@@ -725,7 +725,10 @@ namespace MotionUVC
                     // if the remaining disk space is still less than 1GB, start deleting the oldest image folder
                     if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
                         Logger.logTextLnU(DateTime.Now, "timerFlowControl_Tick: free disk space <1GB");
-                        deleteOldestImageFolder(Settings.StoragePath);
+                        // delete the 5 oldest image folders
+                        for ( int i = 0; i < 5; i++ ) {
+                            deleteOldestImageFolder(Settings.StoragePath);
+                        }
                         // if finally the remaining disk space is still less than 1GB
                         if ( driveFreeBytes(Settings.StoragePath) < ONE_GB ) {
                             // check alternative storage path and switch to it if feasible
@@ -3147,8 +3150,8 @@ namespace MotionUVC
         }
         // delete oldest image folder
         void deleteOldestImageFolder(string homeFolder) {
-            FileSystemInfo fileInfo = new DirectoryInfo(homeFolder).GetFileSystemInfos().OrderBy(fi => fi.CreationTime).First();
-            Directory.Delete(fileInfo.FullName, true);
+            FileSystemInfo dirInfo = new DirectoryInfo(homeFolder).GetDirectories().OrderBy(fi => fi.CreationTime).First();
+            Directory.Delete(dirInfo.FullName, true);
         }
 
         // PInvoke for Windows API function GetDiskFreeSpaceEx
