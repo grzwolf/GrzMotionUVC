@@ -3133,10 +3133,12 @@ namespace MotionUVC
 
         // delete avi files
         void deleteAviFiles(string homeFolder, long gainedSpace) {
-            // get avi-files in homeFolder and have the file array sorted by last write time in ascending order
+            // get video files in homeFolder and have the file array sorted by last write time in ascending order
             System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(homeFolder);
-            System.IO.FileInfo[] fiArr = di.GetFiles("*.avi").OrderBy(p => p.LastWriteTime).ToArray();
-            // delete oldest avi-files until gainedSpace is achieved as goal (could mean all of them)
+            System.IO.FileInfo[] aviArr = di.GetFiles("*.avi").ToArray();
+            System.IO.FileInfo[] mp4Arr = di.GetFiles("*.mp4").ToArray();
+            System.IO.FileInfo[] fiArr = aviArr.Concat(mp4Arr).OrderBy(p => p.LastWriteTime).ToArray();
+            // delete oldest files until gainedSpace is achieved as goal (could mean all of them)
             long deletedSpace = 0;
             foreach ( System.IO.FileInfo fi in fiArr ) {
                 try {
